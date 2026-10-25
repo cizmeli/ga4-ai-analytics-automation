@@ -10,13 +10,14 @@ Snapshot: 2026-10-25 (Europe/Berlin). This status reflects the local n8n UI, vis
 - The assistant's latest-week and trend queries use `weekly_kpis`; saved insights reads `weekly_insights`.
 - `GA4 - Presentation Generator` is published/active, with manual and called-workflow triggers, PostgreSQL data/cache steps, Google Drive template copy, placeholder preparation, Slides HTTP update, optional PowerPoint download node (deactivated), and returned link.
 - Browser tabs show the local Metabase dashboard and the assistant chat endpoint.
-- Credential-free exports exist for ETL, AI Assistant, and Presentation Generator.
+- Credential-free exports exist for ETL, AI Assistant, Presentation Generator, and Weekly AI Insights.
+- `GA4 - Weekly AI Insights` has two triggers (manual and called-workflow), an exact latest-consecutive-week comparison, a metrics-snapshot deduplication query, an OpenRouter LLM chain, and a `weekly_insights` upsert. It was inactive when inspected.
 
 ## Known but not verified in this pass
 
 - The project plan says BigQuery weekly aggregation returned one row, Supabase table and Postgres connection were created, and initial weekly metrics were checked. These statements are carried forward from user-confirmed project notes, not newly re-run.
 - Dashboard data accuracy, SQL question definitions, refresh behavior, and visual QA have not been audited.
-- `GA4 - Weekly AI Insights` appears in the n8n workflow list and is invoked by ETL, but this export/config has not yet been included here.
+- The Weekly AI Insights export was structurally parsed locally but has not been re-imported into a separate n8n instance. Its referenced Postgres and OpenRouter credentials are intentionally omitted.
 - Metabase is planned on port 3001, but Docker lifecycle and datasource permissions were not inspected.
 - Supabase table definitions for `weekly_insights` and `weekly_presentations` must be confirmed against the actual database before applying the example schema.
 

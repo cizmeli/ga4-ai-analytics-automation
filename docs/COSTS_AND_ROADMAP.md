@@ -10,10 +10,10 @@
 
 ## Roadmap
 
-1. Export and document `GA4 - Weekly AI Insights`, then verify table schema and node SQL.
+1. Confirm `weekly_insights` table constraints, column types, and least-privilege grants against the live database; exercise the saved workflow in a disposable environment.
 2. Audit Metabase datasource, questions, dashboard filters, chart calculations, and data range.
 3. Test ETL date boundary, empty-week behavior, data checks, and idempotent upsert in a disposable setup.
-4. Decide whether weekly insights are schedule-driven, ETL-triggered, or user-requested. Document the actual behavior clearly; preserve historical on-demand generation as a proposal until implemented and tested.
+4. Decide whether weekly insights should be schedule-driven, ETL-triggered, or user-requested. Current wiring invokes insights from ETL, with a manual trigger also available, but both workflows are inactive. Preserve arbitrary historical on-demand generation as a proposal until implemented and tested.
 5. Add a dedicated read-only role and audit direct PostgreSQL grants/RLS.
 6. Add device KPIs only after creating and validating their grain and schema.
 7. Add a license and screenshots/diagram assets after confirming redistribution rights.

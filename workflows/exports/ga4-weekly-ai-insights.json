@@ -1,0 +1,176 @@
+{
+  "name": "GA4 - Weekly AI Insights",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        0
+      ],
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nWITH weekly AS (\n    SELECT\n        week_start,\n        week_end,\n        total_users,\n        purchases,\n        purchase_users,\n        revenue_usd,\n\n        100.0 * purchase_users /\n            NULLIF(total_users, 0)\n            AS conversion_rate_pct,\n\n        revenue_usd /\n            NULLIF(purchases, 0)\n            AS revenue_per_purchase_usd\n\n    FROM public.weekly_kpis\n    WHERE week_end - week_start = 6\n),\n\ncomparison AS (\n    SELECT\n        *,\n\n        LAG(week_start) OVER w AS prev_week_start,\n        LAG(week_end) OVER w AS prev_week_end,\n        LAG(total_users) OVER w AS prev_users,\n        LAG(purchases) OVER w AS prev_purchases,\n        LAG(revenue_usd) OVER w AS prev_revenue,\n\n        LAG(conversion_rate_pct) OVER w\n            AS prev_conversion_rate,\n\n        LAG(revenue_per_purchase_usd) OVER w\n            AS prev_revenue_per_purchase\n\n    FROM weekly\n    WINDOW w AS (ORDER BY week_start)\n)\n\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n\n    total_users,\n    purchases,\n    revenue_usd,\n\n    ROUND(conversion_rate_pct, 2)\n        AS conversion_rate_pct,\n\n    ROUND(revenue_per_purchase_usd, 2)\n        AS revenue_per_purchase_usd,\n\n    prev_week_start::text AS prev_week_start,\n    prev_week_end::text AS prev_week_end,\n    prev_users,\n    prev_purchases,\n    prev_revenue,\n\n    ROUND(prev_conversion_rate, 2)\n        AS prev_conversion_rate,\n\n    ROUND(prev_revenue_per_purchase, 2)\n        AS prev_revenue_per_purchase_usd,\n\n    ROUND(\n        100.0 * (total_users - prev_users) /\n        NULLIF(prev_users, 0), 2\n    ) AS users_wow_pct,\n\n    ROUND(\n        100.0 * (purchases - prev_purchases) /\n        NULLIF(prev_purchases, 0), 2\n    ) AS purchases_wow_pct,\n\n    ROUND(\n        100.0 * (revenue_usd - prev_revenue) /\n        NULLIF(prev_revenue, 0), 2\n    ) AS revenue_wow_pct,\n\n    ROUND(\n        conversion_rate_pct - prev_conversion_rate,\n        2\n    ) AS conversion_change_pp,\n\n    ROUND(\n        100.0 * (\n            revenue_per_purchase_usd -\n            prev_revenue_per_purchase\n        ) /\n        NULLIF(prev_revenue_per_purchase, 0),\n        2\n    ) AS revenue_per_purchase_wow_pct\n\nFROM comparison\nWHERE prev_week_end = week_start - 1\nORDER BY week_start DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        192,
+        96
+      ],
+      "name": "Get Weekly Comparison"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\nYou are a Senior E-commerce Data Analyst preparing a weekly executive performance report.\n\nAnalyze ONLY the SQL data provided below.\n\nWEEKLY DATA:\n{{ JSON.stringify($('Get Weekly Comparison').first().json) }}\n\nREPORT STRUCTURE\n\n## 1. Executive Summary\nSummarize overall performance in 2-3 sentences.\nIdentify the most significant movement and its business relevance.\n\n## 2. KPI Performance\nReport the current values and week-over-week changes for:\n- Total Users (%)\n- Purchases (%)\n- Revenue in USD (%)\n- Purchase Conversion Rate (percentage points)\n- Revenue per Purchase in USD (%)\n\n## 3. Key Findings\nIdentify 2-3 meaningful analytical observations.\n\nPay particular attention to:\n- Whether revenue and purchase volume moved proportionally.\n- Whether changes in Revenue per Purchase help explain the mathematical revenue movement.\n- Whether conversion rate remained stable or changed materially.\n\nRevenue = Purchases × Revenue per Purchase.\n\nUse this relationship to explain the numerical components of revenue changes.\n\n## 4. Recommended Investigations\nRecommend 1-2 specific follow-up analyses that would help explain the observations.\n\nANALYTICAL RULES\n- Write the entire report in English.\n- Use only the supplied SQL results.\n- Never invent numbers, dates, or missing metrics.\n- Distinguish observed relationships from causal explanations.\n- Do not attribute changes to pricing, discounts, product mix, customer behavior, or external factors without supporting data.\n- Treat Revenue per Purchase as a descriptive metric, not a validated Average Order Value.\n- Use percentage points for conversion rate changes.\n- Clearly identify the current and previous reporting weeks.\n- Explain that the dataset is historical and anonymized.\n- Do not describe the results as live business performance.\n- If data is insufficient, clearly identify the limitation.\n- Keep the report professional and under 300 words.\n- Use Markdown headings and concise business language.\n\n- When explaining revenue changes, distinguish\n  arithmetic decomposition from business causality.\n- Use \"mathematically accounted for by\" instead\n  of \"caused by\" when discussing purchase volume\n  and revenue per purchase.\n- Do not claim that stable conversion rates prove\n  stable customer behavior.\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        624,
+        96
+      ],
+      "name": "Generate Weekly Insights"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.1-flash-lite",
+        "options": {
+          "maxTokens": 1000,
+          "responseFormat": "text",
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        496,
+        320
+      ],
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.weekly_insights (\n    week_start,\n    week_end,\n    report_markdown,\n    metrics_snapshot,\n    model_name,\n    generated_at\n)\nVALUES (\n    $1::date,\n    $2::date,\n    $3::text,\n    $4::jsonb,\n    $5::text,\n    NOW()\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    week_end = EXCLUDED.week_end,\n    report_markdown = EXCLUDED.report_markdown,\n    metrics_snapshot = EXCLUDED.metrics_snapshot,\n    model_name = EXCLUDED.model_name,\n    generated_at = NOW()\nRETURNING\n    week_start,\n    week_end,\n    model_name,\n    generated_at;\n",
+        "options": {
+          "queryReplacement": "=\n{{\n  [\n    $('Get Weekly Comparison').first().json.week_start,\n    $('Get Weekly Comparison').first().json.week_end,\n    $json.text,\n    JSON.stringify(\n      $('Get Weekly Comparison').first().json\n    ),\n    'google/gemini-3.1-flash-lite'\n  ]\n}}\n"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        976,
+        96
+      ],
+      "name": "Save Weekly Insights"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        192
+      ],
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT TRUE AS should_generate\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM public.weekly_insights\n    WHERE week_start = $1::date\n      AND metrics_snapshot = $2::jsonb\n);\n",
+        "options": {
+          "queryReplacement": "=\n{{\n  [\n    $json.week_start,\n    JSON.stringify($json)\n  ]\n}}\n"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        400,
+        96
+      ],
+      "name": "Check Report Needs Generation"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Weekly Comparison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekly Comparison": {
+      "main": [
+        [
+          {
+            "node": "Check Report Needs Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Weekly Insights",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Weekly Insights": {
+      "main": [
+        [
+          {
+            "node": "Save Weekly Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Weekly Comparison",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Report Needs Generation": {
+      "main": [
+        [
+          {
+            "node": "Generate Weekly Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

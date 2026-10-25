@@ -11,7 +11,7 @@ The n8n instance currently contains four GA4 workflows. The workflow exports in 
 | Workflow | Observed state | Purpose |
 |---|---|---|
 | `GA4 Weekly ETL` | Inactive; schedule trigger is deactivated | Reads the next historical week from Supabase, aggregates BigQuery KPIs, upserts the week, then invokes Weekly AI Insights. |
-| `GA4 - Weekly AI Insights` | Present in n8n; export not yet captured | Generates and stores weekly analysis in `weekly_insights`. Details must be exported before claiming exact node config. |
+| `GA4 - Weekly AI Insights` | Inactive; credential-free export included | Compares the latest consecutive complete weeks, skips an unchanged metrics snapshot, generates a bounded English report, and upserts `weekly_insights`. |
 | `GA4 - AI Analytics Assistant` | Published and active | Chat interface using OpenRouter `google/gemini-3.1-flash-lite`, Simple Memory, read-only PostgreSQL tools, and a presentation tool workflow. |
 | `GA4 - Presentation Generator` | Published and active; PowerPoint export node deactivated | Reuses a cached deck for the same insight version or copies a Slides template, fills placeholders, stores the presentation reference, and returns its link. |
 
@@ -67,7 +67,7 @@ Users are distinct within each week and must not be summed across weeks to repre
 
 ## Status and known gaps
 
-See [project status](docs/STATUS.md) for verified vs planned work. Historical on-demand report generation is not claimed as implemented. Weekly AI insights and presentation generation are separate downstream flows; do not assume the ETL currently runs automatically because its schedule trigger is deactivated and the workflow itself is inactive.
+See [project status](docs/STATUS.md) for verified vs planned work. Historical on-demand report generation is not claimed as implemented. Weekly AI insights and presentation generation are separate downstream flows; both the ETL and Weekly AI Insights workflows are inactive, so do not assume automatic report generation is running.
 
 ## License
 
