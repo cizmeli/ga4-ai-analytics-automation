@@ -18,3 +18,21 @@
 - **Save Presentation Record** — upserts the generated presentation reference and source-report timestamp.
 
 The export replaces Drive/presentation identifiers and credential bindings. Reconnect the template, OAuth credential, and assistant tool workflow after import. See [sanitized JSON](../exports/ga4-presentation-generator.json).
+
+## Workflow diagram
+
+```mermaid
+flowchart LR
+  M[Manual Trigger] --> D[Get Presentation Data]
+  C[Called Workflow Trigger] --> D
+  D --> K[Check Existing Presentation]
+  K --> B{Presentation Needs Generation?}
+  B -->|yes| CP[Copy Presentation Template]
+  CP --> F[Prepare Presentation Fields]
+  F --> U[Fill Presentation Placeholders]
+  U --> S[Save Presentation Record]
+  S --> R[Return Presentation Link]
+  B -->|no: cached version| E[Return Existing Presentation Link]
+  X[Export PowerPoint<br/>deactivated]:::inactive
+  classDef inactive stroke-dasharray: 5 5,opacity:0.55
+```

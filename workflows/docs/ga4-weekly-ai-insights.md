@@ -43,3 +43,16 @@ WHERE NOT EXISTS (
 - The workflow's inactive state means no automatic insight generation currently occurs through this workflow.
 - The sanitized export has no credentials. Select the appropriate least-privilege PostgreSQL credential and OpenRouter credential after import; never commit credential exports or tokens.
 - Validate SQL, schema, connection permissions, and model output in a disposable environment before activation.
+
+## Workflow diagram
+
+```mermaid
+flowchart LR
+  M[Manual Trigger] --> Q[Get Weekly Comparison]
+  C[Called Workflow Trigger] --> Q
+  Q --> K{Check Report Needs Generation?}
+  K -->|new or changed snapshot: row returned| L[Generate Weekly Insights]
+  K -.->|unchanged snapshot: no row, execution ends| END((End))
+  O[OpenRouter Chat Model] -. language model .-> L
+  L --> W[Save Weekly Insights]
+```

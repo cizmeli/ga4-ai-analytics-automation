@@ -10,10 +10,10 @@ The n8n instance currently contains four GA4 workflows. The workflow exports in 
 
 | Workflow | Observed state | Purpose |
 |---|---|---|
-| `GA4 Weekly ETL` | Inactive; schedule trigger is deactivated | Reads the next historical week from Supabase, aggregates BigQuery KPIs, upserts the week, then invokes Weekly AI Insights. |
-| `GA4 - Weekly AI Insights` | Inactive; credential-free export included | Compares the latest consecutive complete weeks, skips an unchanged metrics snapshot, generates a bounded English report, and upserts `weekly_insights`. |
-| `GA4 - AI Analytics Assistant` | Published and active | Chat interface using OpenRouter `google/gemini-3.1-flash-lite`, Simple Memory, read-only PostgreSQL tools, and a presentation tool workflow. |
-| `GA4 - Presentation Generator` | Published and active; PowerPoint export node deactivated | Reuses a cached deck for the same insight version or copies a Slides template, fills placeholders, stores the presentation reference, and returns its link. |
+| [`GA4 Weekly ETL`](workflows/docs/ga4-weekly-etl.md) | Inactive; schedule trigger is deactivated | Reads the next historical week from Supabase, aggregates BigQuery KPIs, upserts the week, then invokes Weekly AI Insights. |
+| [`GA4 - Weekly AI Insights`](workflows/docs/ga4-weekly-ai-insights.md) | Inactive; credential-free export included | Compares the latest consecutive complete weeks, skips an unchanged metrics snapshot, generates a bounded English report, and upserts `weekly_insights`. |
+| [`GA4 - AI Analytics Assistant`](workflows/docs/ga4-ai-analytics-assistant.md) | Published and active | Chat interface using OpenRouter `google/gemini-3.1-flash-lite`, Simple Memory, read-only PostgreSQL tools, and a presentation tool workflow. |
+| [`GA4 - Presentation Generator`](workflows/docs/ga4-presentation-generator.md) | Published and active; PowerPoint export node deactivated | Reuses a cached deck for the same insight version or copies a Slides template, fills placeholders, stores the presentation reference, and returns its link. |
 
 A Metabase dashboard named **GA4 E-commerce Analytics** is open in the local browser at `http://localhost:3001`. The dashboard has not been independently audited for every chart/query in this documentation pass.
 
@@ -36,7 +36,7 @@ flowchart LR
 ## Repository map
 
 - `workflows/exports/`: Sanitized, structurally valid n8n workflow JSON exports.
-- `workflows/docs/`: Per-workflow node order, purpose, and configuration notes.
+- `workflows/docs/`: Per-workflow node order, purpose, configuration notes, and GitHub-rendered Mermaid diagrams.
 - `sql/`: PostgreSQL schema and reusable SQL.
 - `prompts/`: AI system prompt and manual test prompts.
 - `docker/`: Local Metabase Compose example.

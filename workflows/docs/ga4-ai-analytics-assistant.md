@@ -14,3 +14,16 @@
 8. **Generate Weekly Presentation** — tool-workflow call to the presentation generator.
 
 SQL and exact system message: [assistant system prompt](../../prompts/ai-assistant-system-prompt.md). Test prompts: [manual checks](../../prompts/assistant-test-prompts.md). Export: [ga4-ai-analytics-assistant.json](../exports/ga4-ai-analytics-assistant.json).
+
+## Workflow diagram
+
+```mermaid
+flowchart LR
+  C[Authenticated Chat Trigger] --> A[AI Agent]
+  M[OpenRouter Chat Model] -. language model .-> A
+  S[Simple Memory] -. conversation memory .-> A
+  A -. read-only tool .-> K[Get Latest Week KPIs]
+  A -. read-only tool .-> T[Get Weekly Trends]
+  A -. read-only tool .-> I[Get Saved Weekly Insights]
+  A -. presentation tool .-> P[Generate Weekly Presentation]
+```

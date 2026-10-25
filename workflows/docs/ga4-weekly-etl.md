@@ -11,3 +11,13 @@
 5. **Trigger Weekly AI Insights** — invoke the separate insights workflow after KPI storage.
 
 The source export is [ga4-weekly-etl.json](../exports/ga4-weekly-etl.json). It omits credential bindings. The exact Schedule Trigger interval and timezone need inspection before activation.
+
+## Workflow diagram
+
+```mermaid
+flowchart LR
+  S[Schedule Trigger<br/>deactivated] --> N[Supabase: Get Next Week]
+  N --> B[BigQuery: Weekly KPIs]
+  B --> U[Supabase: Upsert KPIs]
+  U --> I[Trigger Weekly AI Insights]
+```
