@@ -1,0 +1,383 @@
+{
+  "name": "GA4 - Presentation Generator",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "dfa9fc26-968e-4e0a-8ba9-e7d02688a44a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    report_markdown,\n    metrics_snapshot,\n    model_name,\n    generated_at\nFROM public.weekly_insights\nWHERE week_end - week_start = 6\nORDER BY week_start DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        -80
+      ],
+      "id": "1658a08a-b116-4acf-85e2-593fdd689b49",
+      "name": "Get Presentation Data"
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1KNtzp_amcdBkZsV0_Po8YdqDx9RSN4u1oav7kHUusaA",
+          "mode": "id"
+        },
+        "name": "={{ 'GA4 Weekly Report - ' + $json.week_start }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        -176
+      ],
+      "id": "383aed4e-bd0b-464b-ade7-5324b02da282",
+      "name": "Copy Presentation Template"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst source = $('Get Presentation Data').first().json;\nconst presentationId = $input.first().json.id;\n\nif (!presentationId) {\n  throw new Error('Copied presentation ID is missing');\n}\n\nconst m = typeof source.metrics_snapshot === 'string'\n  ? JSON.parse(source.metrics_snapshot)\n  : source.metrics_snapshot;\n\n// Normalize the AI-generated Markdown.\nconst report = String(source.report_markdown || '')\n  .replace(/\\\\n/g, '\\n');\n\n// Extract a numbered report section.\nfunction section(number) {\n  const heading = new RegExp(\n    `^#{1,4}\\\\s*${number}\\\\.\\\\s*[^\\\\n]*$`, 'mi'\n  );\n  const match = heading.exec(report);\n\n  if (!match) {\n    throw new Error(`Report section ${number} not found`);\n  }\n\n  const remaining = report.slice(\n    match.index + match[0].length\n  );\n\n  return remaining\n    .split(/\\n(?=#{1,4}\\s*\\d+\\.\\s)/)[0]\n    .trim()\n    .replace(/\\*\\*/g, '');\n}\n\n// Format numbers safely.\nfunction num(key) {\n  const value = Number(m[key]);\n\n  if (!Number.isFinite(value)) {\n    throw new Error(`Invalid metric: ${key}`);\n  }\n\n  return value;\n}\n\nfunction integer(key) {\n  return num(key).toLocaleString('en-US');\n}\n\nfunction usd(key) {\n  return '$' + num(key).toLocaleString('en-US', {\n    minimumFractionDigits: 2,\n    maximumFractionDigits: 2\n  });\n}\n\nfunction change(key, suffix = '%') {\n  const value = num(key);\n\n  return (value > 0 ? '+' : '') +\n    value.toFixed(2) + suffix;\n}\n\n\nfunction movement(key) {\n  const value = num(key);\n\n  if (value === 0) return 'remained unchanged';\n\n  return `${value < 0 ? 'fell' : 'rose'} ${Math.abs(value).toFixed(2)}%`;\n}\n\nfunction shortFindings() {\n  const conversionChange = num('conversion_change_pp');\n\n  return [\n    `Revenue ${movement('revenue_wow_pct')}; purchases ${movement('purchases_wow_pct')}.`,\n\n    `Revenue per purchase ${movement('revenue_per_purchase_wow_pct')} (${usd('prev_revenue_per_purchase_usd')} to ${usd('revenue_per_purchase_usd')}).`,\n\n    `Conversion rate changed by ${conversionChange > 0 ? '+' : ''}${conversionChange.toFixed(2)} pp to ${num('conversion_rate_pct').toFixed(2)}%.`\n  ].join('\\n\\n');\n}\n\nfunction shortRecommendations() {\n  const recommendations = section(4);\n\n  const titles = [...recommendations.matchAll(\n    /(?:^|\\n)\\s*\\d+[.)]\\s*([^:\\n]{4,90}):/g\n  )]\n    .map(match => match[1].trim())\n    .slice(0, 2);\n\n  if (titles.length !== 2) {\n    throw new Error('Could not extract two investigation titles');\n  }\n\n  return titles\n    .map((title, index) => `${index + 1}. Investigate ${title.toLowerCase()}.`)\n    .join('\\n\\n');\n}\n\n\n// Map all template placeholders.\nconst fields = {\n  REPORTING_WEEK:\n    `${source.week_start} to ${source.week_end}`,\n\n  EXECUTIVE_SUMMARY: section(1),\n\n  USERS: integer('total_users'),\n  USERS_WOW: change('users_wow_pct'),\n\n  PURCHASES: integer('purchases'),\n  PURCHASES_WOW: change('purchases_wow_pct'),\n\n  REVENUE: usd('revenue_usd'),\n  REVENUE_WOW: change('revenue_wow_pct'),\n\n  CONVERSION_RATE:\n    num('conversion_rate_pct').toFixed(2) + '%',\n\n  CONVERSION_CHANGE_PP:\n    change('conversion_change_pp', ' pp'),\n\n  REVENUE_PER_PURCHASE:\n    usd('revenue_per_purchase_usd'),\n\n  RPP_WOW:\n    change('revenue_per_purchase_wow_pct'),\n\n  KEY_FINDINGS: shortFindings(),\n  RECOMMENDATIONS: shortRecommendations()\n};\n\n// Build Google Slides replacement requests.\nconst requests = Object.entries(fields).map(\n  ([name, value]) => ({\n    replaceAllText: {\n      containsText: {\n        text: `{{${name}}}`,\n        matchCase: true\n      },\n      replaceText: String(value)\n    }\n  })\n);\n\nreturn [{\n  json: {\n    presentationId,\n    placeholderCount: requests.length,\n    requests\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -176
+      ],
+      "id": "01173f1d-8acd-4d15-8ee7-399cdf01baa2",
+      "name": "Prepare Presentation Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://slides.googleapis.com/v1/presentations/' + $json.presentationId + ':batchUpdate' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "[REDACTED]",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        -176
+      ],
+      "id": "b44b06ca-0fdc-4be5-a7a8-0dec01feeb8c",
+      "name": "Fill Presentation Placeholders"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.presentationId }}\n",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "googleFileConversion": {
+            "conversion": {}
+          },
+          "fileName": "={{ 'GA4_Weekly_Report_' + $('Get Presentation Data').first().json.week_start + '.pptx' }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        240
+      ],
+      "id": "e23270b5-2746-4796-9a9a-8569be522b00",
+      "name": "Export PowerPoint",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "53dae82d-c65c-4519-9411-a8d51de4ae4e",
+              "name": "presentation_url",
+              "value": "={{ 'https://docs.google.com/presentation/d/' + $json.presentationId + '/edit' }}",
+              "type": "string"
+            },
+            {
+              "id": "fdf0920e-0cb4-4e28-ba08-3ca942324fea",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "161a73ec-5719-41a3-9169-e4d14e0002e4",
+              "name": "message",
+              "value": "Presentation generated successfully.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1776,
+        -176
+      ],
+      "id": "46e63924-56b8-4bce-91af-ea4a7d1e4ea2",
+      "name": "Return Presentation Link"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        -176
+      ],
+      "id": "012c78dc-3aa1-4af8-aa82-80a7a6e3ffce",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT\n    i.week_start::text AS week_start,\n    i.generated_at::text AS report_generated_at,\n    p.presentation_id AS existing_presentation_id,\n\n    (p.presentation_id IS NULL) AS needs_generation\n\nFROM public.weekly_insights i\n\nLEFT JOIN public.weekly_presentations p\n    ON p.week_start = i.week_start\n    AND p.source_report_generated_at = i.generated_at\n\nWHERE i.week_start = $1::date\n\nLIMIT 1;\n",
+        "options": {
+          "queryReplacement": "={{ [ $json.week_start ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        432,
+        -80
+      ],
+      "id": "cd06ab8b-dd9a-4a18-901c-4fb2fe2799dc",
+      "name": "Check Existing Presentation"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bbca9bc3-1a2b-4fba-a2b9-cc7d183a624a",
+              "leftValue": "={{ $json.needs_generation }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        656,
+        -80
+      ],
+      "id": "cf31a79f-024f-4e87-8dd4-c93384e32ad7",
+      "name": "Presentation Needs Generation?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dc372d47-e65f-4b47-b111-02f6ae6c62e7",
+              "name": "presentation_url",
+              "value": "={{ 'https://docs.google.com/presentation/d/' + $json.existing_presentation_id + '/edit' }}",
+              "type": "string"
+            },
+            {
+              "id": "9f91f9c3-d3ff-424f-af7a-839851cacc15",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "0f2f579f-0f85-4cd7-9c4b-acf950fb5223",
+              "name": "message",
+              "value": "Existing presentation reused.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        16
+      ],
+      "id": "5a57312b-7a81-4492-ab69-72bd31ec94d3",
+      "name": "Return Existing Presentation Link"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nINSERT INTO public.weekly_presentations (\n    week_start,\n    presentation_id,\n    source_report_generated_at\n)\nVALUES (\n    $1::date,\n    $2::text,\n    $3::timestamptz\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    presentation_id = EXCLUDED.presentation_id,\n    source_report_generated_at =\n        EXCLUDED.source_report_generated_at,\n    updated_at = NOW()\nRETURNING\n    week_start::text AS week_start,\n    presentation_id AS \"presentationId\";\n",
+        "options": {
+          "queryReplacement": "={{\n  [\n    $('Get Presentation Data').first().json.week_start,\n    $json.presentationId,\n    $('Get Presentation Data').first().json.generated_at\n  ]\n}}\n"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1552,
+        -176
+      ],
+      "id": "446dc9ca-5748-4f2c-a5dc-58efd07782ce",
+      "name": "Save Presentation Record"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Presentation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Presentation Data": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Presentation Template": {
+      "main": [
+        [
+          {
+            "node": "Prepare Presentation Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Presentation Fields": {
+      "main": [
+        [
+          {
+            "node": "Fill Presentation Placeholders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill Presentation Placeholders": {
+      "main": [
+        [
+          {
+            "node": "Save Presentation Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Presentation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Presentation": {
+      "main": [
+        [
+          {
+            "node": "Presentation Needs Generation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Presentation Needs Generation?": {
+      "main": [
+        [
+          {
+            "node": "Copy Presentation Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Existing Presentation Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Presentation Record": {
+      "main": [
+        [
+          {
+            "node": "Return Presentation Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2b87cfcb-7db9-4f2b-ade0-d60e1746140d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "04255b42a91f8a0a7b14051df41a71c1fb90b851d24df88e29c646bb7a24ee3f"
+  },
+  "nodeGroups": [],
+  "id": "f8e68w9otsrw1xd8",
+  "tags": []
+}

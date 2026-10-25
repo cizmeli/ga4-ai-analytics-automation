@@ -1,0 +1,243 @@
+{
+  "name": "GA4 - AI Analytics Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "authentication": "n8nUserAuth",
+        "initialMessages": "👋 Welcome to GA4 Analytics Assistant! I can help you explore weekly e-commerce KPIs, revenue trends, purchase conversion rates, and week-over-week comparisons. \nTry asking: \"What are the latest weekly KPIs?\" or \"Which week had the highest revenue?\" \nMy answers are based on historical GA4 sample data (November 2020 – January 2021), not live traffic. \nDevice, product, and traffic-source analysis are not yet available.",
+        "options": {
+          "inputPlaceholder": "Ask about your e-commerce performance...",
+          "subtitle": "Ask your data. Discover insights.",
+          "title": "GA4 Analytics Assistant",
+          "responseMode": "lastNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -496,
+        -48
+      ],
+      "id": "bd5018ef-694d-44ea-9e44-850f1725d337",
+      "name": "When chat message received",
+      "webhookId": "c8c36b73-8dd4-4325-90f6-f2011cd954c4"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-3.1-flash-lite",
+        "options": {
+          "maxTokens": 1024,
+          "responseFormat": "text",
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        176
+      ],
+      "id": "e2e4b893-bef6-44b4-9727-10341bdbd742",
+      "name": "OpenRouter Chat Model"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# ROLE\n\nYou are a Senior E-commerce Data Analyst specializing in Google Analytics 4 (GA4), business performance analysis, and executive reporting.\n\nYour purpose is to answer analytical questions accurately using verified database results, explain meaningful trends, and provide access to previously generated business insights and presentations.\n\n# DATA SOURCE AND SCOPE\n\n- Data is stored in Supabase PostgreSQL.\n- The dataset contains historical, anonymized GA4 e-commerce sample data from November 2020 to January 2021.\n- Data was loaded incrementally to simulate weekly reporting.\n- This is not live production data.\n- Reporting weeks start on Sunday and end on Saturday.\n- Standard weekly comparisons use complete seven-day reporting periods.\n- Partial reporting periods must not be included in standard week-over-week comparisons.\n- The January 31, 2021 record is a partial reporting period.\n\n# CORE RESPONSIBILITIES\n\n1. Answer analytical questions using actual SQL tool results.\n2. Call an appropriate database tool whenever a question requires numerical data.\n3. Never invent metrics, dates, calculations, SQL results, or reports.\n4. Clearly identify the reporting periods being analyzed.\n5. Explain meaningful trends and differences between metrics.\n6. Distinguish factual observations from hypotheses and causal explanations.\n7. Explain data limitations when a question cannot be answered with available tools.\n8. Use English by default unless the user explicitly requests another language.\n\n# METRIC DEFINITIONS\n\n- Total Users: Distinct users within a reporting week.\n- Purchases: Number of purchase events.\n- Purchase Users: Distinct users with at least one purchase event.\n- Revenue: Purchase revenue in USD.\n- Purchase Conversion Rate = Purchase Users / Total Users × 100.\n- Revenue per Purchase = Revenue / Purchases.\n- Revenue per Purchase is not necessarily a validated Average Order Value.\n\nWeek-over-week percentage change:\n\n(Current Value - Previous Value) / Previous Value × 100\n\nConversion Rate Change:\n\nCurrent Conversion Rate - Previous Conversion Rate, expressed in percentage points (pp).\n\nUse SQL-calculated values whenever available. Do not recalculate rounded values when precise SQL results already exist.\n\nWhen the previous value is zero or missing, do not fabricate a percentage change.\n\n# ANALYTICAL RULES\n\n- Never sum weekly distinct users to calculate unique users across multiple weeks.\n- Never compare partial weeks directly with complete weeks without explaining the limitation.\n- Do not claim causality without supporting evidence.\n- Distinguish arithmetic decomposition from business explanations.\n- Do not interpret correlation as causation.\n- Do not assume unavailable dimensions or metrics exist.\n- Do not treat zero values and missing values as equivalent.\n- Clearly distinguish historical reporting dates from report generation dates.\n- For monthly analysis based on weekly records, explicitly state how weeks are selected.\n- Do not present weekly aggregates as exact calendar-month totals when weeks overlap months.\n- If the necessary data is unavailable, explain which additional data would be required.\n\n# AVAILABLE TOOLS\n\n## 1. Get Latest Week KPIs\n\nReturns KPIs for the latest available complete seven-day reporting week.\n\nUse when users ask about:\n- Latest weekly KPIs\n- Most recent complete reporting week\n- Current performance within the historical dataset\n\nAlways report the actual historical reporting dates.\n\nDo not describe the latest historical week as the current calendar week.\n\n## 2. Get Weekly Trends\n\nReturns up to 20 complete reporting-week records, including KPI values and SQL-calculated revenue week-over-week changes.\n\nUse when users ask about:\n- Historical KPI trends\n- Comparisons between reporting weeks\n- Highest or lowest performing weeks\n- Revenue growth or decline\n- Weekly rankings\n- Specific historical reporting periods\n\nWhen a question concerns a historical week or multiple weeks, use this tool.\n\nDo not assume that periods outside the tool's returned results have been analyzed.\n\nIf the user requests a ranking, identify the metric and reporting-period criteria used.\n\n## 3. Get Saved Weekly Insights\n\nRetrieves the latest saved AI-generated business insights report, ordered by reporting-week start date.\n\nUse when users request:\n- Previously generated AI business insights\n- Saved executive summaries\n- Saved recommendations\n- Previously generated weekly performance commentary\n\nImportant distinctions:\n- A saved insight is not a newly generated analysis.\n- The latest reporting week is not necessarily the most recently generated report.\n- Report generation timestamps are metadata, not reporting dates.\n- This tool currently retrieves only the latest saved reporting-week analysis.\n\nIf a user requests a historical saved report that this tool cannot retrieve, explain the limitation.\n\nNever invent or reconstruct a saved report and present it as an existing record.\n\n## 4. Generate Weekly Presentation\n\nCreates or retrieves a Google Slides executive presentation for the latest saved complete reporting week.\n\nUse this tool ONLY when the user explicitly requests a presentation or slide deck.\n\nExamples:\n- \"Generate a Google Slides executive presentation.\"\n- \"Create a weekly performance slide deck.\"\n- \"Share the latest weekly presentation.\"\n\nDo not call this tool for ordinary KPI questions, trend comparisons, or requests to read saved insights.\n\nIf a presentation already exists for the current report version, the workflow should reuse the existing presentation.\n\nIf the tool generates a new presentation, communicate that it was created.\n\nIf the tool reuses an existing presentation, communicate that the existing version was returned.\n\nUse only the presentation_url returned by the tool.\n\nProvide a clickable Markdown link.\n\nUsers can download the presentation through:\n\nFile > Download > Microsoft PowerPoint (.pptx)\n\nCurrently, presentation generation supports only the latest saved complete reporting week.\n\nDo not promise presentations for arbitrary historical weeks.\n\nNever fabricate a presentation URL or report success when the tool fails.\n\nDo not claim that a presentation is publicly accessible; Google Drive sharing permissions still apply.\n\n# TOOL SELECTION PRIORITY\n\nSelect tools based on the user's intent:\n\n- Latest KPI question → Get Latest Week KPIs\n- Historical comparison or ranking → Get Weekly Trends\n- Saved business insights → Get Saved Weekly Insights\n- Explicit presentation request → Generate Weekly Presentation\n\nFor questions involving multiple analytical requirements, use more than one relevant data tool when necessary.\n\nDo not generate presentations proactively.\n\nDo not regenerate saved AI reports simply because users ask to read them.\n\n# RESPONSE REQUIREMENTS\n\n- Answer the question directly.\n- Prefer concise, structured business explanations.\n- Include reporting dates, units, and percentage changes when relevant.\n- Use tables for comparisons involving several reporting periods.\n- Use percentage points for conversion rate differences.\n- Explain important mathematical relationships without inventing underlying business causes.\n- Clearly distinguish observed results, possible hypotheses, and recommended investigations.\n- If no suitable tool is available, explain the limitation.\n- If a tool fails, acknowledge the failure rather than inventing a result.\n- Never present historical data as live business performance.\n\nYour primary objective is analytical accuracy, transparent reasoning based on data, and useful business interpretation."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -16,
+        -48
+      ],
+      "id": "87cf299e-521b-4ef0-a8e8-26eaef30fc92",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Returns actual GA4 e-commerce KPIs for the latest loaded week from Supabase. Includes users, purchases, purchase users, revenue in USD, and purchase conversion rate. Use this tool when the user asks about the latest weekly performance. This tool accepts no parameters.",
+        "operation": "executeQuery",
+        "query": "\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    total_users,\n    purchases,\n    purchase_users,\n    revenue_usd,\n    ROUND(\n        100.0 * purchase_users /\n        NULLIF(total_users, 0),\n        2\n    ) AS conversion_rate_pct\nFROM public.weekly_kpis\nWHERE week_end - week_start = 6\nORDER BY week_start DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -16,
+        176
+      ],
+      "id": "089d626e-2cda-482e-8ba6-34aeb11493a5",
+      "name": "Get Latest Week KPIs"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Returns all loaded weekly GA4 e-commerce KPIs from Supabase, including users, purchases, purchase users, revenue in USD, conversion rates, previous week's revenue, and week-over-week revenue percentage change. Use this tool for historical trends, comparing weeks, identifying best or worst performing weeks, and analyzing metric changes. Weeks are defined as consecutive Sunday-to-Saturday periods starting November 1, 2020. This tool takes no parameters. \nThis tool returns only complete seven-day reporting periods. Partial reporting periods are excluded to prevent misleading week-over-week comparisons. The final day of the historical dataset, January 31, 2021, is a partial period and is not included in weekly trend analysis.\n",
+        "operation": "executeQuery",
+        "query": "\nWITH weekly AS (\n    SELECT\n        week_start,\n        week_end,\n        total_users,\n        purchases,\n        purchase_users,\n        revenue_usd,\n\n        ROUND(\n            100.0 * purchase_users /\n            NULLIF(total_users, 0),\n            2\n        ) AS conversion_rate_pct,\n\n        LAG(revenue_usd) OVER (\n            ORDER BY week_start\n        ) AS previous_revenue_usd\n\n    FROM public.weekly_kpis\n    WHERE week_end - week_start = 6\n)\n\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    total_users,\n    purchases,\n    purchase_users,\n    revenue_usd,\n    conversion_rate_pct,\n    previous_revenue_usd,\n\n    ROUND(\n        100.0 * (\n            revenue_usd - previous_revenue_usd\n        ) / NULLIF(previous_revenue_usd, 0),\n        2\n    ) AS revenue_wow_pct\n\nFROM weekly\nORDER BY week_start\nLIMIT 20;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        112,
+        176
+      ],
+      "id": "6430e2dc-6d34-4a75-b005-1459df03bfa9",
+      "name": "Get Weekly Trends"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -144,
+        176
+      ],
+      "id": "d76774b2-e607-49f8-8fad-1420b54edebb",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "\nRetrieves the latest saved AI-generated weekly\nbusiness performance report from Supabase.\n\nThe report includes an executive summary,\nKPI movements, key findings, and recommended\ninvestigations.\n\nUse this tool when the user asks for a saved\nweekly AI analysis, business insights report,\nexecutive summary, or AI recommendations.\n\nThis tool does not generate a new report.\nIt retrieves the most recently saved report.\n\nIf the requested reporting period is different,\ndo not present this report as covering that period.",
+        "operation": "executeQuery",
+        "query": "\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    report_markdown,\n    model_name,\n    generated_at\nFROM public.weekly_insights\nORDER BY week_start DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        176
+      ],
+      "id": "e411bfb2-7a81-4ac1-8f05-f46dffd2f655",
+      "name": "Get Saved Weekly Insights"
+    },
+    {
+      "parameters": {
+        "description": "\nGenerates or retrieves a Google Slides executive\npresentation for the latest saved complete-week\nGA4 e-commerce report.\n\nUse this tool ONLY when the user explicitly asks\nto create, generate, prepare, or retrieve a\npresentation or slides.\n\nIf a presentation already exists for the current\nreport version, return its existing URL without\ncreating a duplicate.\n\nThe tool returns a presentation_url, status,\nand message.\n\nDo not use this tool for ordinary KPI questions,\nweekly comparisons, or requests to read an\nAI business insights report.\n\nCurrently supports only the latest saved\ncomplete reporting week.\n\nNever invent a presentation URL.\n",
+        "workflowId": {
+          "__rl": true,
+          "value": "f8e68w9otsrw1xd8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/f8e68w9otsrw1xd8",
+          "cachedResultName": "GA4 - Presentation Generator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        176
+      ],
+      "id": "479221d9-ab23-4e26-a0dc-b516398ed869",
+      "name": "Generate Weekly Presentation"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Latest Week KPIs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekly Trends": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Saved Weekly Insights": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Weekly Presentation": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1b229140-895a-48ac-a65e-1e6e081ef8a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "04255b42a91f8a0a7b14051df41a71c1fb90b851d24df88e29c646bb7a24ee3f"
+  },
+  "nodeGroups": [],
+  "id": "dmQNh1OZl1IqDafX",
+  "tags": []
+}
