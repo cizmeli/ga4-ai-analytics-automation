@@ -69,7 +69,7 @@ Users are distinct within each week and must not be summed across weeks to repre
 
 ## Status and known gaps
 
-See [project status](docs/STATUS.md) for the Step 22–25 verification snapshot and execution evidence. On-demand insights can target a complete week represented in the data when a consecutive prior week exists; unsupported weeks return `not_found`. The Weekly ETL remains inactive, so scheduled ingestion and automatic weekly insight generation are not running. Insights-only assistant requests do not create presentations; slides run only when explicitly requested. If the requested slide report is missing, the presentation workflow requests insights for that same week, reloads it, and returns `not_found` if no eligible comparison exists.
+See [project status](docs/STATUS.md) for the Step 22–26 verification snapshot and execution evidence. On-demand insights can target a complete week represented in the data when a consecutive prior week exists; unsupported weeks return `not_found`. The Weekly ETL remains inactive, so scheduled ingestion and automatic weekly insight generation are not running. Insights-only assistant requests do not create presentations; slides run only when explicitly requested. If the requested slide report is missing, the presentation workflow requests insights for that same week, reloads it, and returns `not_found` if no eligible comparison exists.
 
 ## License
 
