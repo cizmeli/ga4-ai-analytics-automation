@@ -2,46 +2,40 @@
 
 ## Purpose and current state
 
-This workflow compares the latest complete Sunday-to-Saturday week in `public.weekly_kpis` with its immediately preceding complete week, asks an OpenRouter model for a concise, evidence-bounded executive analysis, and upserts the result into `public.weekly_insights`. The workflow was observed as **inactive** in n8n on 2026-10-25. The Weekly ETL contains a node that invokes it, but that ETL is also inactive.
+This workflow compares a selected complete Sunday-to-Saturday week in `public.weekly_kpis` with its immediately preceding complete week, asks an OpenRouter model for a concise, evidence-bounded executive analysis, and upserts the result into `public.weekly_insights`. It was published and active in n8n on 2026-11-04. The Weekly ETL remains inactive; the Assistant's on-demand tool is the active request path.
 
-The credential-free export is [`../exports/ga4-weekly-ai-insights.json`](../exports/ga4-weekly-ai-insights.json). It removes instance-specific workflow/node IDs and credential bindings. Reconnect credentials after import. Its JSON structure was parsed locally; it has not been imported into a separate n8n instance.
+The workflow accepts an explicit `requested_week`; if omitted, it uses the latest eligible complete-week pair. A selected week requires a consecutive complete predecessor. If no valid pair exists, the workflow returns `not_found`.
 
-## Trigger and node order
+The credential-free export is [`../exports/ga4-weekly-ai-insights.json`](../exports/ga4-weekly-ai-insights.json). It removes instance-specific workflow/node IDs and credential bindings. Reconnect credentials after import.
 
-There are two entry points, both connected to the same query path:
+## Trigger and processing
 
-1. **When clicking ‘Execute workflow’** — manual test/execute trigger.
-2. **When Executed by Another Workflow** — called-workflow trigger; the ETL is configured to invoke this workflow after its weekly KPI write.
-3. **Get Weekly Comparison** — selects complete seven-day rows (`week_end - week_start = 6`), calculates conversion rate and revenue per purchase, uses `LAG` for the prior record, requires the prior week to end the day before the current week starts, and returns the latest valid pair. It computes WoW percentage changes for users, purchases, revenue, and revenue per purchase, plus conversion-rate change in percentage points. If no consecutive pair exists, no report can be generated.
-4. **Check Report Needs Generation** — checks whether `weekly_insights` already contains this `week_start` with an identical JSONB `metrics_snapshot`. It returns a row only if the snapshot is new or absent. The subsequent LLM node therefore receives no input for an unchanged snapshot. This is snapshot-based deduplication, not arbitrary historical report generation.
-5. **Generate Weekly Insights** — LLM chain asks for an English report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations. It is constrained to the SQL result, historical/anonymized-data context, and no unsupported causal claims.
-6. **OpenRouter Chat Model** — attached to the LLM chain; observed model `google/gemini-3.1-flash-lite`, temperature `0.2`, max output `1000` tokens. Pricing and provider behavior can change; see [costs and roadmap](../../docs/COSTS_AND_ROADMAP.md).
-7. **Save Weekly Insights** — parameterized Postgres upsert keyed by `week_start`; stores report markdown, the complete metrics snapshot, model name, and current generation timestamp. Existing row for the week is updated if the snapshot has changed.
+1. **Manual trigger** — execute the workflow for a controlled test.
+2. **Called-workflow trigger** — used by the AI Assistant's on-demand insights tool. The inactive ETL also has an invocation node, but its schedule is disabled.
+3. **Get Weekly Comparison** — selects the requested complete week, or the latest eligible pair by default. It excludes partial periods, requires the prior week to end the day before the selected week begins, and computes WoW changes for users, purchases, revenue, and revenue per purchase, plus conversion-rate change in percentage points.
+4. **Check Report Needs Generation** — looks for a saved row with the selected `week_start` and an identical JSONB `metrics_snapshot`. The `requested_week` input is excluded from snapshot equality. A match returns `status=cached` and skips the insights LLM and save node; a new or changed snapshot continues.
+5. **Generate Weekly Insights** — asks for an English report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations. It is bounded to SQL results and historical/anonymized-data context, without unsupported causal claims.
+6. **OpenRouter Chat Model** — observed model `google/gemini-3.1-flash-lite`, temperature 0.2, max output 1000 tokens.
+7. **Save Weekly Insights** — parameterized Postgres upsert keyed by `week_start`; stores report markdown, metrics snapshot, model name, and generation timestamp.
+
+The current comparison output carries `prompt_version=weekly-insights-v1`. Existing execution `1115` generated and saved the `2020-11-22` report; `1116` reused it as cached at `generated_at=2026-11-04T20:44:33.798Z`. See [status evidence](../../docs/STATUS.md).
 
 ## Query and persistence details
 
 The exact SQL and parameter expressions are preserved in the export. The comparison query uses only `weekly_kpis`; it does not query raw GA4 events or establish business causality. `revenue_per_purchase_usd` is descriptive and is not asserted to be a validated average order value.
 
-The cache check is equivalent to:
+The cache check compares the selected `week_start` and JSONB `metrics_snapshot`; the request input itself does not affect snapshot equality. The current prompt version is `weekly-insights-v1`. Review the live workflow before changing the versioning scheme or assuming a prompt edit invalidates a cached row.
 
-```sql
-SELECT TRUE AS should_generate
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM public.weekly_insights
-    WHERE week_start = $1::date
-      AND metrics_snapshot = $2::jsonb
-);
-```
+## Conditional presentation flow
 
-`should_generate` is not explicitly branched on; zero returned rows stop downstream execution. Save uses `INSERT ... ON CONFLICT (week_start) DO UPDATE` with parameter replacements. Confirm the actual table constraints and permissions before applying any schema example.
+This workflow does not call the presentation generator. The Assistant routes an insights-only request here and calls the presentation workflow only when the user explicitly requests slides. A cache hit here therefore does not create a deck.
 
 ## Limitations and safe operation
 
-- The comparison is always the latest consecutive complete-week pair. The called-workflow input is passed through to the shared query path, but the SQL itself selects the latest pair rather than an input-selected historical week.
-- This does not implement user-requested arbitrary historical-week generation.
-- The workflow's inactive state means no automatic insight generation currently occurs through this workflow.
-- The sanitized export has no credentials. Select the appropriate least-privilege PostgreSQL credential and OpenRouter credential after import; never commit credential exports or tokens.
+- A report requires a selected complete week and its immediately preceding consecutive complete week. Requesting `2020-10-25` returned `not_found` because no eligible comparison was available.
+- A malformed `requested_week` such as `not-a-date` currently fails at the date comparison with a database parsing error; it does not reach the LLM or save node.
+- This workflow uses aggregated weekly KPIs, not raw GA4 events, and does not establish causality.
+- The sanitized export has no credentials. Select least-privilege PostgreSQL and OpenRouter credentials after import; never commit credential exports or tokens.
 - Validate SQL, schema, connection permissions, and model output in a disposable environment before activation.
 
 ## Workflow diagram
@@ -49,10 +43,11 @@ WHERE NOT EXISTS (
 ```mermaid
 flowchart LR
   M[Manual Trigger] --> Q[Get Weekly Comparison]
-  C[Called Workflow Trigger] --> Q
+  C[Assistant Called Workflow] --> Q
+  ETL[Inactive Weekly ETL] -. disabled invocation .-> Q
   Q --> K{Check Report Needs Generation?}
-  K -->|new or changed snapshot: row returned| L[Generate Weekly Insights]
-  K -.->|unchanged snapshot: no row, execution ends| END((End))
+  K -->|new or changed snapshot| L[Generate Weekly Insights]
+  K -.->|unchanged snapshot: cached, end| END((End))
   O[OpenRouter Chat Model] -. language model .-> L
   L --> W[Save Weekly Insights]
 ```
