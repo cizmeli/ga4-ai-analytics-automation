@@ -13,12 +13,14 @@ The credential-free export is [`../exports/ga4-weekly-ai-insights.json`](../expo
 1. **Manual trigger** — execute the workflow for a controlled test.
 2. **Called-workflow trigger** — used by the AI Assistant's on-demand insights tool. The inactive ETL also has an invocation node, but its schedule is disabled.
 3. **Get Weekly Comparison** — selects the requested complete week, or the latest eligible pair by default. It excludes partial periods, requires the prior week to end the day before the selected week begins, and computes WoW changes for users, purchases, revenue, and revenue per purchase, plus conversion-rate change in percentage points.
-4. **Check Report Needs Generation** — looks for a saved row with the selected `week_start` and an identical JSONB `metrics_snapshot`. The `requested_week` input is excluded from snapshot equality. A match returns `status=cached` and skips the insights LLM and save node; a new or changed snapshot continues.
-5. **Generate Weekly Insights** — asks for an English report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations. It is bounded to SQL results and historical/anonymized-data context, without unsupported causal claims.
-6. **OpenRouter Chat Model** — observed model `google/gemini-3.1-flash-lite`, temperature 0.2, max output 1000 tokens.
-7. **Save Weekly Insights** — parameterized Postgres upsert keyed by `week_start`; stores report markdown, metrics snapshot, model name, and generation timestamp.
+4. **Check Report Needs Generation** — looks for a saved row with the selected `week_start` and an identical JSONB `metrics_snapshot`. The `requested_week` input is excluded from snapshot equality. This checker determines whether a generation decision is needed; it does not itself emit the final `status=cached`.
+5. **Needs AI Generation?** — IF node branches on the cache check. A matching snapshot goes to **Return Saved Insights**; a new or changed snapshot goes to **Generate Weekly Insights**.
+6. **Generate Weekly Insights** — asks for an English report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations. It is bounded to SQL results and historical/anonymized-data context, without unsupported causal claims.
+7. **OpenRouter Chat Model** — observed model `google/gemini-3.1-flash-lite`, temperature 0.2, max output 1000 tokens.
+8. **Save Weekly Insights** — parameterized Postgres upsert keyed by `week_start`; stores report markdown, metrics snapshot, model name, and generation timestamp.
+9. **Return Saved Insights** — returns the existing saved row for a cache hit with `status=cached`, without running the insights-generation LLM or save node.
 
-The current comparison output carries `prompt_version=weekly-insights-v1`. Existing execution `1115` generated and saved the `2020-11-22` report; `1116` reused it as cached at `generated_at=2026-11-04T20:44:33.798Z`. See [status evidence](../../docs/STATUS.md).
+The current comparison output carries `prompt_version=weekly-insights-v1`. Existing execution `1115` generated and saved the `2020-11-22` report; `1116` returned it through the saved-insights branch at `generated_at=2026-11-04T20:44:33.798Z`. See [status evidence](../../docs/STATUS.md).
 
 ## Query and persistence details
 
@@ -45,9 +47,10 @@ flowchart LR
   M[Manual Trigger] --> Q[Get Weekly Comparison]
   C[Assistant Called Workflow] --> Q
   ETL[Inactive Weekly ETL] -. disabled invocation .-> Q
-  Q --> K{Check Report Needs Generation?}
-  K -->|new or changed snapshot| L[Generate Weekly Insights]
-  K -.->|unchanged snapshot: cached, end| END((End))
+  Q --> K[Check Report Needs Generation]
+  K --> B{Needs AI Generation?}
+  B -->|yes: new or changed snapshot| L[Generate Weekly Insights]
+  L --> S[Save Weekly Insights]
+  B -->|no: matching snapshot| R[Return Saved Insights: status cached]
   O[OpenRouter Chat Model] -. language model .-> L
-  L --> W[Save Weekly Insights]
 ```
