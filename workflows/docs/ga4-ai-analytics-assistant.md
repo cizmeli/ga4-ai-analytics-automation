@@ -10,7 +10,7 @@
 4. **Get Latest Week KPIs** — read-only query for latest complete-week KPIs and conversion rate.
 5. **Get Weekly Trends** — up to 20 complete weeks with SQL-computed CVR and revenue WoW changes; excludes partial periods.
 6. **Simple Memory** — conversational context buffer.
-7. **Get Saved Weekly Insights** — reads saved insight reports.
+7. **Get Saved Weekly Insights** — reads the latest saved row from `weekly_insights`.
 8. **Generate On-Demand Weekly Insights** — generates or reuses an insight for an eligible complete reporting week.
 9. **Generate Weekly Presentation** — tool-workflow call to the presentation generator. The assistant uses it only for an explicit slide request.
 
