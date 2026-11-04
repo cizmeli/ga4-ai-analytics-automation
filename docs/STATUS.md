@@ -4,14 +4,14 @@ Snapshot: 2026-11-04 (Europe/Berlin). This status reflects the open n8n instance
 
 ## Verified from the open n8n instance
 
-- `GA4 Weekly ETL` exists and has five nodes: Supabase next-week query → schedule trigger → BigQuery weekly aggregation → Supabase upsert → trigger Weekly AI Insights.
+- `GA4 Weekly ETL` exists and has five nodes in this order: schedule trigger → Supabase next-week query → BigQuery weekly aggregation → Supabase upsert → invoke Weekly AI Insights. It is inactive and the schedule trigger is deactivated.
 - The ETL workflow is inactive, and its schedule trigger visibly reads **Deactivated**.
 - `GA4 - AI Analytics Assistant` is published/active and contains an authenticated chat trigger, OpenRouter Chat Model (`google/gemini-3.1-flash-lite`), AI Agent, Simple Memory, three PostgreSQL read tools, an on-demand insights tool, and a presentation workflow tool. Insights-only requests do not call the presentation tool; slides are called only for explicit requests.
 - The assistant's latest-week and trend queries use `weekly_kpis`; saved insights reads `weekly_insights`.
-- `GA4 - Presentation Generator` is published/active, with manual and called-workflow triggers, PostgreSQL data/cache steps, Google Drive template copy, placeholder preparation, Slides HTTP update, optional PowerPoint download node (deactivated), and returned link.
+- `GA4 - Presentation Generator` is published/active. If the requested week's insight is missing, it calls Weekly Insights for that same week, reloads that week's report, and then checks the presentation cache; if no eligible insight can be produced, it returns `not_found`. Otherwise it reuses a cached deck or copies a template, updates Slides, saves the presentation reference, and returns a link. PowerPoint download remains deactivated.
 - Browser tabs show the local Metabase dashboard and the assistant chat endpoint.
 - Credential-free exports exist for ETL, AI Assistant, Presentation Generator, and Weekly AI Insights.
-- `GA4 - Weekly AI Insights` is published/active with manual and called-workflow triggers. It supports a selected complete week, requires the consecutive prior week, and skips the insights LLM and save node when the selected `week_start` and JSONB `metrics_snapshot` match. The comparison output carries `prompt_version=weekly-insights-v1`; `requested_week` is excluded from snapshot equality.
+- `GA4 - Weekly AI Insights` is published/active with manual and called-workflow triggers. It supports a selected complete week, requires the consecutive prior week, and checks the selected `week_start` and JSONB `metrics_snapshot`. A matching snapshot flows through **Needs AI Generation?** to **Return Saved Insights**; the checker itself does not emit the final `status=cached`. The comparison output carries `prompt_version=weekly-insights-v1`; `requested_week` is excluded from snapshot equality.
 
 ## Known but not verified in this pass
 
