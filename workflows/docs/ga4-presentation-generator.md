@@ -8,7 +8,7 @@
 - **When Executed by Another Workflow** — called by the AI Assistant for an explicit slide request.
 - **Get Presentation Data** — defaults to the latest complete KPI week, or uses the requested week. Loads its saved insight and metrics when available.
 - **Generate Missing Weekly Insights** — if the requested week's saved insight is missing, requests an insight for that same week.
-- **Reload Presentation Data** — reloads the exact requested week after Weekly Insights returns a generated or cached report.
+- **Reload Presentation Data** — reloads the exact requested week after every completed Weekly Insights call, including a `not_found` result.
 - **Reloaded Weekly Report Found?** — IF node; sends a found report to the presentation cache path, otherwise to **Return Missing Report**.
 - **Return Missing Report** — returns `not_found` when the requested week's insight cannot be produced; no slides are created.
 - **Check Existing Presentation** — checks the cache by `week_start` and report `generated_at` version.
@@ -45,7 +45,7 @@ flowchart LR
   W --> L[Reload Presentation Data after subworkflow result]
   L --> G{Reloaded Weekly Report Found?}
   G -->|yes| K
-  G -->|no| MR
+  G -->|no| MR[Return Missing Report]
   K --> B{Presentation Needs Generation?}
   B -->|yes| CP[Copy Presentation Template]
   CP --> P[Prepare Presentation Fields]
