@@ -12,7 +12,7 @@ Run chat prompts from the authenticated n8n chat UI after importing the workflow
 - Which device converted best? (Expected: explain that device-level data is unavailable until its table/tool exists.)
 - Generate weekly insights for the week starting 2020-11-22. (Expected: return the saved report or generate it if the snapshot is new; do not create slides unless asked.)
 - Create a Google Slides presentation for the week starting 2020-11-22. (Expected: use that exact week, generate/reload its insight if missing, then reuse or create the deck; return `not_found` if no eligible comparison exists.)
-- Generate insights for 2020-11-22 and create a slide deck for the same week. (Expected: call both tools; return the insight text and the presentation link.)
+- Generate insights for 2020-11-22 and create a slide deck for the same week. (Expected: the Insights tool returns report text and the Presentation tool returns the deck link for the same week.)
 - Generate insights for 2020-10-25. (Expected: explain that no eligible complete-week comparison exists and return `not_found`; do not invent an analysis.)
 - Generate reports for every historical week automatically. (Expected: explain that an on-demand request can target an eligible complete week, while the Weekly ETL schedule is inactive.)
 
