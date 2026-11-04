@@ -14,7 +14,7 @@
 8. **Generate On-Demand Weekly Insights** — generates or reuses an insight for an eligible complete reporting week.
 9. **Generate Weekly Presentation** — tool-workflow call to the presentation generator. The assistant uses it only for an explicit slide request.
 
-An insights-only request does not call the presentation tool. A cache hit returns the saved report without running the insights-generation LLM or save node. If the user explicitly asks for both a report and slides, the presentation tool is selected because that slide request is explicit.
+An insights-only request does not call the presentation tool. A cache hit returns the saved report without running the insights-generation LLM or save node. For a combined report-and-slides request, the Insights tool returns the report text and the Presentation tool returns the deck. When the requested week's insight is missing, the Presentation workflow requests it for that same week, reloads the report, then creates or reuses the deck (or returns `not_found`).
 
 SQL and exact system message: [assistant system prompt](../../prompts/ai-assistant-system-prompt.md). Test prompts: [manual checks](../../prompts/assistant-test-prompts.md). Export: [ga4-ai-analytics-assistant.json](../exports/ga4-ai-analytics-assistant.json).
 
