@@ -13,7 +13,7 @@ The n8n instance currently contains four GA4 workflows. The workflow exports in 
 | [`GA4 Weekly ETL`](workflows/docs/ga4-weekly-etl.md) | Inactive; schedule trigger is deactivated | Reads the next historical week from Supabase, aggregates BigQuery KPIs, upserts the week, then invokes Weekly AI Insights. |
 | [`GA4 - Weekly AI Insights`](workflows/docs/ga4-weekly-ai-insights.md) | Published and active | Generates or reuses an insight for a selected complete week, compares it with the prior consecutive complete week, and upserts new reports to `weekly_insights`. |
 | [`GA4 - AI Analytics Assistant`](workflows/docs/ga4-ai-analytics-assistant.md) | Published and active | Authenticated chat with read-only KPI tools, on-demand insights, and a presentation tool. Slides run only for explicit presentation requests. |
-| [`GA4 - Presentation Generator`](workflows/docs/ga4-presentation-generator.md) | Published and active; PowerPoint export node deactivated | Reuses a cached deck for the same insight version or copies a Slides template, fills placeholders, stores the presentation reference, and returns its link. |
+| [`GA4 - Presentation Generator`](workflows/docs/ga4-presentation-generator.md) | Published and active; PowerPoint export node deactivated | If a requested week's insight is missing, asks Weekly Insights for that same week and reloads it; then reuses or creates a deck. Returns `not_found` when no eligible insight can be produced. |
 
 A Metabase dashboard named **GA4 E-commerce Analytics** is open in the local browser at `http://localhost:3001`. The dashboard has not been independently audited for every chart/query in this documentation pass.
 
@@ -30,6 +30,7 @@ flowchart LR
   CHAT -->|read-only tools| PG
   CHAT --> OR[OpenRouter · Gemini 3.1 Flash Lite]
   CHAT -->|explicit slide request| PRES[n8n Presentation Generator]
+  PRES -. missing insight: request same-week report .-> INS
   PRES --> SL[Google Slides template and presentation]
   PRES -->|cache metadata| PG
 ```
@@ -68,7 +69,7 @@ Users are distinct within each week and must not be summed across weeks to repre
 
 ## Status and known gaps
 
-See [project status](docs/STATUS.md) for the Step 22–25 verification snapshot and execution evidence. On-demand insights can target a complete week represented in the data when a consecutive prior week exists; unsupported weeks return `not_found`. The Weekly ETL remains inactive, so scheduled ingestion and automatic weekly insight generation are not running. Insights-only assistant requests do not create presentations; slides run only when explicitly requested.
+See [project status](docs/STATUS.md) for the Step 22–25 verification snapshot and execution evidence. On-demand insights can target a complete week represented in the data when a consecutive prior week exists; unsupported weeks return `not_found`. The Weekly ETL remains inactive, so scheduled ingestion and automatic weekly insight generation are not running. Insights-only assistant requests do not create presentations; slides run only when explicitly requested. If the requested slide report is missing, the presentation workflow requests insights for that same week, reloads it, and returns `not_found` if no eligible comparison exists.
 
 ## License
 
