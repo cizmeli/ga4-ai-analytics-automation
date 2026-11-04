@@ -5,19 +5,21 @@
 ## Node order and purpose
 
 - **When clicking ‘Execute workflow’** — manual invocation for testing.
-- **Get Presentation Data** — loads the saved insight, metrics snapshot, model, and generation timestamp used for the deck.
-- **Copy Presentation Template** — duplicates a Drive presentation template; template file identifier must be rebound after import.
-- **Prepare Presentation Fields** — transforms saved metrics and report content into placeholder fields. It requires the copied presentation result to contain an `id`.
-- **Fill Presentation Placeholders** — makes the Slides API update request to replace text placeholders. A provider error stops the later save step.
-- **Export PowerPoint** — optional download node; deactivated in the source.
-- **Return Presentation Link** — returns the new deck link from manual runs.
 - **When Executed by Another Workflow** — called by the AI Assistant for an explicit slide request.
+- **Get Presentation Data** — loads the saved insight and metrics for the requested week. If that week's insight is missing, the workflow calls Weekly Insights for the same week.
+- **Reload Presentation Data** — after the insights call succeeds or returns a cached report, reloads the exact requested week before continuing.
+- **Return Not Found** — if Weekly Insights cannot produce a report for that week, returns `not_found` and does not create slides.
 - **Check Existing Presentation** — checks the cache by `week_start` and report `generated_at` version.
 - **Presentation Needs Generation?** — branches based on cache lookup.
 - **Return Existing Presentation Link** — returns the existing deck for a cached version without copying, filling, or saving another record.
+- **Copy Presentation Template** — duplicates a Drive presentation template; template file identifier must be rebound after import.
+- **Prepare Presentation Fields** — transforms saved metrics and report content into placeholder fields. It requires the copied presentation result to contain an `id`.
+- **Fill Presentation Placeholders** — makes the Slides API update request to replace text placeholders. A provider error stops the later save step.
 - **Save Presentation Record** — upserts the generated presentation reference and source-report timestamp after the Slides update succeeds.
+- **Return Presentation Link** — returns the new deck link from manual runs.
+- **Export PowerPoint** — optional download node; deactivated in the source.
 
-The Assistant does not invoke this workflow for an insights-only request. It invokes it only when the user explicitly asks for slides. A cache hit returns the existing link without creating another Drive file.
+A missing report follows this order: request an insight for the same week, reload that exact week's saved report, then check the presentation cache and either reuse or create the deck. If no eligible comparison exists, the workflow returns `not_found`. The Assistant invokes this workflow only for an explicit slide request; an insights-only request does not create a deck.
 
 The export replaces Drive/presentation identifiers and credential bindings. Reconnect the template, OAuth credential, and assistant tool workflow after import. See [sanitized JSON](../exports/ga4-presentation-generator.json).
 
@@ -35,13 +37,19 @@ These paths are summarized in [project status](../../docs/STATUS.md). The error 
 flowchart LR
   M[Manual Trigger] --> D[Get Presentation Data]
   C[Explicit Assistant Slide Request] --> D
-  D --> K[Check Existing Presentation]
+  D --> F{Saved insight found?}
+  F -->|yes| K[Check Existing Presentation]
+  F -->|no| W[Call Weekly Insights for exact week]
+  W --> R{Insight result}
+  R -->|saved or cached| L[Reload Presentation Data for same week]
+  L --> K
+  R -->|not_found| NF[Return not_found]
   K --> B{Presentation Needs Generation?}
   B -->|yes| CP[Copy Presentation Template]
-  CP --> F[Prepare Presentation Fields]
-  F --> U[Fill Presentation Placeholders]
+  CP --> P[Prepare Presentation Fields]
+  P --> U[Fill Presentation Placeholders]
   U --> S[Save Presentation Record]
-  S --> R[Return Presentation Link]
+  S --> RL[Return Presentation Link]
   B -->|no: cached version| E[Return Existing Presentation Link]
   X[Export PowerPoint<br/>deactivated]:::inactive
   classDef inactive stroke-dasharray: 5 5,opacity:0.55
