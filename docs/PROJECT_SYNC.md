@@ -7,11 +7,11 @@ This file is the handoff point for future updates to this repository. Refresh it
 - GitHub repository: [cizmeli/ga4-ai-analytics-automation](https://github.com/cizmeli/ga4-ai-analytics-automation)
 - Visibility: public, observed on 2026-11-05. This sync did not change repository visibility.
 - Default branch: main.
-- Base main head before this documentation correction: 59a37a14791578a3cb673fb12f2b7a62d79c7c42.
-- Pre-correction snapshot is preserved on branch backup/pre-assistant-draft-wording-2026-11-06.
+- Base main head before the 2026-11-06 Insights v6 sync: c2d78df67c28fa438466bd47588338daaec5b6bc.
+- Pre-sync snapshot is preserved on branch backup/pre-insights-purchase-users-fix-2026-11-06.
 - Previous documentation snapshot remains on backup/pre-doc-review-fixes-2026-11-06 at 69292337f4f2bfefeda29ce5624ddc3f4b14f129.
 - Earlier pre-sync snapshot remains on backup/pre-sync-2026-11-05 at e485612d3ebc0371d317fa89e9624e0c911443b2.
-- Latest recorded sync: Step 30 calls are non-blocking; logger failures can omit log entries without stopping parent workflows. See GitHub history for commits.
+- Latest recorded sync: the sanitized Weekly AI Insights export and status documents reflect the published v6 query and prompt; 8/8 no-write evaluation evidence is recorded. Step 30 calls remain non-blocking; see the update log.
 - Project artifacts and technical documentation are written in English. Conversation with the owner may be in Turkish.
 
 ## Project purpose and architecture
@@ -33,13 +33,13 @@ The data is historical, anonymized sample data, not live business traffic. Repor
 | Workflow | Observed state | Key behavior and caution |
 |---|---|---|
 | GA4 Weekly ETL | Inactive; current 10-node configuration has no published active version | Schedule Trigger is deactivated. All available historical data is loaded; no schedule is needed. The current configuration was not runtime-tested in this sync. |
-| GA4 - Weekly AI Insights | Published and active; 24-node published graph | Accepts a selected complete week or defaults to the latest eligible pair; requires a consecutive prior week; unchanged metrics snapshots return the saved report. |
+| GA4 - Weekly AI Insights | Published and active; 24-node published graph using v6 query and prompt | Comparison output includes purchase_users and prev_purchase_users; accepts a selected complete week or defaults to the latest eligible pair; unchanged metrics snapshots return the saved report. |
 | GA4 - AI Analytics Assistant | Published and active; 12-node graph | Authenticated chat, read-only KPI tools, on-demand insights, and explicit-request presentation tool. The saved draft and published version both contain three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`. |
 | GA4 - Presentation Generator | Published and active; 32-node graph | Generates or reuses a deck for an eligible requested week; returns not_found if its insight cannot be produced. PowerPoint download is deactivated. The saved draft now contains 32 nodes, including all 15 Step 30 logging calls. |
 | GA4 Project Log Writer | Active shared helper; 7 nodes | Sanitizes run/stage/KPI summaries and upserts them to configured Google Sheets. This is an external write path. |
 | GA4 Temporary Read-only Permission Check | Inactive temporary workflow | Excluded from product exports. |
 
-The Step 32 v6 Weekly Insights query is an unpublished draft. It adds purchase_users and prev_purchase_users to the comparison projection and passed 8/8 no-write output hard gates on 2026-11-05. It is stored separately in [sql/ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql); the active published export remains unchanged.
+The Step 32 v6 Weekly Insights query and prompt are now part of the published 24-node active workflow. The query output includes purchase_users and prev_purchase_users. The 8/8 no-write hard-gate evaluation used pinned test data on 2026-11-05; logging returned no_write/test_only and the retest did not persist workflow output. The separate [sql/ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql) remains a reference artifact; the sanitized JSON export reflects the published logic. The published workflow was not run as part of this documentation sync.
 
 ## Repository contents
 
@@ -48,7 +48,7 @@ The Step 32 v6 Weekly Insights query is an unpublished draft. It adds purchase_u
 - workflows/docs/*.md — node descriptions, behavior notes, and Mermaid diagrams, including Step 30 logging.
 - prompts/ai-assistant-system-prompt.md — current published assistant system prompt.
 - prompts/assistant-test-prompts.md — manual assistant checks.
-- sql/ga4-weekly-insights-v6-draft.sql — unpublished read-only Step 32 query draft.
+- sql/ga4-weekly-insights-v6-draft.sql — standalone query reference associated with the Step 32 evaluation; the sanitized workflow export reflects the published v6 logic.
 - sql/schema.sql, sql/weekly_analytics.sql — schema example and reusable analytics SQL.
 - docs/SETUP.md, docs/SECURITY.md, docs/STATUS.md, docs/COSTS_AND_ROADMAP.md — setup, security, verified state, and planning notes.
 - docker/compose.yaml, .env.example, .gitignore — local setup helpers.
@@ -75,6 +75,8 @@ All included exports omit n8n credential bindings and live workflow, node, webho
 - Confirm licensing and redistribution rights before adding a license, screenshots, or other assets.
 
 ## Update log
+
+- 2026-11-06 — synced the published Weekly AI Insights v6 query and prompt to the sanitized export (`f3c99bc6`), updated workflow documentation (`6b00bf7b`), and recorded status/evaluation evidence (`275f09b2`). Backup: `backup/pre-insights-purchase-users-fix-2026-11-06` at `c2d78df6`.
 
 - 2026-11-06 — aligned Assistant workflow node-list labels with the current published nodes in commit `278a8e41`.
 
