@@ -2,16 +2,16 @@
 
 **Observed state:** published active shared helper, 9 nodes. It is invoked by Step 30 logging nodes in the four GA4 workflows.
 
-## Node order and purpose
+## Serial node order and purpose
 
 1. **When Executed by Another Workflow** — receives a logging event.
 2. **Sanitize Logging Payload** — filters input to allowlisted run, stage, and aggregate KPI fields.
 3. **Upsert Stage Row** — records a sanitized stage result.
-4. **Expand KPI Rows** — maps aggregate KPIs into rows.
-5. **Has KPI Rows?** — checks whether the expansion produced rows before the KPI upsert.
-6. **Upsert KPI Row** — upserts KPI summaries when rows are present.
-7. **Update Run Row?** — checks whether run-level status should be updated.
-8. **Upsert Run Row** — upserts the sanitized run summary.
+4. **Update Run Row?** — checks whether run-level status should be updated.
+5. **Upsert Run Row** — upserts the sanitized run summary when the check is true; the false path skips this write.
+6. **Expand KPI Rows** — maps aggregate KPIs into rows after the run-row check and any run-row upsert.
+7. **Has KPI Rows?** — checks whether the expansion produced rows before the KPI upsert.
+8. **Upsert KPI Row** — upserts KPI summaries when rows are present; the false path skips this write.
 9. **Return Logger Completion** — returns the logger completion result to the calling workflow.
 
 The Google Sheets nodes in the live helper write to its configured logging workbook. The workbook identifier and credential are not included in this public repository. The helper's portable workflow export is intentionally not included. Configure a separate test helper and workbook before connecting test workflows.
@@ -27,16 +27,13 @@ The Google Sheets nodes in the live helper write to its configured logging workb
 
 ~~~mermaid
 flowchart LR
-  T[Called Workflow Trigger] --> S[Sanitize Logging Payload]
-  S --> U[Upsert Stage Row]
-  S --> K[Expand KPI Rows]
-  K --> Q{Has KPI Rows?}
-  Q -->|Yes| KP[Upsert KPI Row]
-  Q -->|No| C[Return Logger Completion]
-  KP --> C
-  S --> RQ{Update Run Row?}
-  RQ --> RU[Upsert Run Row]
-  RU --> C
+  T[Called Workflow Trigger] --> S[Sanitize Logging Payload] --> U[Upsert Stage Row] --> RQ{Update Run Row?}
+  RQ -->|Yes| RU[Upsert Run Row]
+  RQ -->|No| K[Expand KPI Rows]
+  RU --> K
+  K --> HQ{Has KPI Rows?}
+  HQ -->|Yes| KP[Upsert KPI Row] --> C[Return Logger Completion]
+  HQ -->|No| C
 ~~~
 
 Portable export: intentionally not included in this public repository.
