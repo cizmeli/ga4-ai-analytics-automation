@@ -15,9 +15,9 @@
 7. **Get Saved Weekly Insights** — reads saved reports from weekly_insights.
 8. **Generate On-Demand Weekly Insights** — requests an insight for an eligible complete week.
 9. **Generate Weekly Presentation** — calls the presentation generator only for an explicit slide request.
-10. **Step 30 Log Assistant 01 chat trigger/start** — logs the sanitized start event.
-11. **Step 30 Log Assistant 02 agent/tool summary** — logs the sanitized tool-stage summary.
-12. **Step 30 Log Assistant 03 final response** — logs the sanitized completion stage.
+10. **Log Assistant Run Start** — logs the sanitized start event.
+11. **Log Assistant Agent Stage** — logs the sanitized tool-stage summary.
+12. **Log Assistant Run Completion** — logs the sanitized completion stage.
 
 An insights-only request does not call the presentation tool. A cache hit skips the insights-generation LLM and save node. A combined report-and-slides request returns report text and the deck link for the same week. If a requested insight is missing, the Presentation workflow requests that week from Weekly Insights, reloads it, and creates or reuses the deck, or returns not_found.
 
