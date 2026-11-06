@@ -5,18 +5,18 @@ Snapshot: 2026-11-06 (Europe/Berlin). This reflects the open n8n instance, exist
 ## Verified workflow state
 
 - GA4 Weekly ETL is inactive. Its current 10-node configuration has no published active version, and its schedule trigger is deactivated. All available historical sample data through 2021-01-31 is loaded, so no schedule is needed. The current configuration was not runtime-tested for this update; the latest successful ETL execution in reviewed history was 2026-10-25.
-- GA4 - Weekly AI Insights is published and active with a 24-node published graph. It accepts a selected complete week or defaults to the latest eligible pair, requires the immediately preceding complete week, and returns not_found when no eligible comparison exists. It skips LLM generation when the saved week_start and metrics_snapshot match.
+- GA4 - Weekly AI Insights is published and active with a 24-node published graph using the v6 comparison query and prompt. Its query includes purchase_users and prev_purchase_users. It accepts a selected complete week or defaults to the latest eligible pair, requires the immediately preceding complete week, and returns not_found when no eligible comparison exists. It skips LLM generation when the saved week_start and metrics_snapshot match.
 - GA4 - AI Analytics Assistant is published and active with 12 nodes. It has an authenticated chat trigger, OpenRouter model, Simple Memory, three read-only PostgreSQL tools, an on-demand insights tool, and an explicit-request presentation tool. Successful assistant runs were present in reviewed 2026-11-04 history.
 - GA4 - Presentation Generator is published and active with a 32-node published graph. If a requested report is missing, it asks Weekly Insights for that same week, reloads the report, and then reuses or creates a deck. It returns not_found when no eligible insight is produced. PowerPoint download remains deactivated.
 - GA4 Project Log Writer is active with 7 nodes. It sanitizes incoming logging payloads and upserts run, stage, and aggregate KPI summaries to a configured Google Sheets destination. The assistant, insights, presentation, and current ETL graphs have Step 30 logging calls. Its portable export is intentionally not included in this public repository.
 - GA4 Temporary Read-only Permission Check is inactive and temporary; it is not part of the product workflow exports.
 - The Metabase dashboard is visible at http://localhost:3001. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
 
-## Step 32 draft and evaluation
+## Step 32 evaluation and published v6
 
-The unpublished v6 draft of the Weekly Insights comparison query adds purchase_users and prev_purchase_users. The separate draft SQL is [ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql). It is not included in the published workflow export and has not been activated.
+The published 24-node Weekly Insights version uses the v6 query and prompt; its comparison output includes purchase_users and prev_purchase_users. The separate [ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql) file remains a reference artifact, while the sanitized JSON export now matches the published v6 logic.
 
-The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05. It used pinned test data; logging nodes returned no_write/test_only, and the retest did not persist workflow output. The independent reviewer classified the “contribute to the observed change” wording as arithmetic decomposition, not a business-causality claim.
+The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned test data. Logging returned no_write/test_only, and the retest did not persist workflow output. This is evaluation evidence for the query and prompt logic; the published workflow was not run as part of this documentation sync.
 
 ## Existing execution evidence reviewed
 
