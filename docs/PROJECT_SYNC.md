@@ -8,11 +8,13 @@ This portfolio project uses anonymized historical GA4 sample data to demonstrate
 
 The repository contains setup guidance, sanitized workflow exports, workflow guides, sample queries, and local configuration examples. Users must supply and configure their own services, credentials, and external assets.
 
-## Current presentation export
+## Current presentation export and runtime
 
 The sanitized Presentation Generator export contains 33 nodes and is inactive for portable use. Its behavior is documented at [workflows/docs/ga4-presentation-generator.md](../workflows/docs/ga4-presentation-generator.md).
 
-The existing runtime cache-hit path was verified. The generated-presentation path has not been rerun on the current workflow version. A clean n8n import has not been validated; do not describe the export as import-tested.
+The active runtime reused an existing presentation for the requested week after the logging serialization change; expected presentation and assistant stage log events were written, and no new Slides file or presentation database record was created. A pinned generated-branch test wrote the expected log events and a run row, then reached its final response with mocked Drive and database outputs. It did not create real Slides or database records. The current published generated-presentation path has not had a real new-presentation run after that change; the earlier real generation run was on an older build.
+
+The export has not been re-imported into a clean n8n instance. Do not describe it as import-tested.
 
 ## Repository map
 
@@ -33,4 +35,5 @@ The existing runtime cache-hit path was verified. The generated-presentation pat
 
 ## Update log
 
-- 2026-11-06 — redacted public documentation and corrected the Presentation Generator export count to 33 nodes. Documented the verified cache-hit path and current validation limits.
+- 2026-11-06 — redacted public documentation, corrected the Presentation Generator export count to 33 nodes, and recorded cache-hit and pinned generated-branch verification with its limits.
+- 2026-11-06 — updated the status and presentation guide for serialized logger behavior and current runtime verification.
