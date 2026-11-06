@@ -23,15 +23,15 @@ The sanitized published export is [ga4-weekly-ai-insights.json](../exports/ga4-w
 11. **Return Saved Insights** — returns a matching saved report with status=cached, without running the insights-generation LLM or save node.
 12. **Return Missing KPI** — returns not_found when the selected week has no eligible consecutive comparison.
 
-The current published comparison output does not include prev_purchase_users. The separate Step 32 v6 draft adds that field; see [draft SQL](../../sql/ga4-weekly-insights-v6-draft.sql). The draft is not part of the published export.
+The published v6 comparison output includes both purchase_users and prev_purchase_users, along with current and comparison week boundaries. The Generate Weekly Insights prompt is also versioned as v6. The sanitized export is the portable representation of this published 24-node workflow.
 
 ## Step 30 logging nodes
 
 The published graph has 12 logging calls to the shared Project Log Writer: two trigger/start nodes; comparison fetch; both comparison-availability branches; both report-generation decision branches; model generation; persistence; and three return branches. They log stage summaries and do not replace report persistence.
 
-## Step 32 v6 draft and evaluation
+## Step 32 evaluation and published v6
 
-The unpublished v6 draft adds purchase_users and prev_purchase_users to the comparison projection. It passed 8/8 no-write output hard gates on 2026-11-05. The test used pinned data and does not publish or activate the SQL. Keep the separate draft query separate from the published workflow export.
+The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned test data; logging returned no_write/test_only and the retest did not persist workflow output. The evaluated query and v6 prompt were subsequently published in the 24-node active workflow. This records evaluation evidence for the logic, not a new execution of the published workflow.
 
 ## Limitations and safe operation
 
