@@ -31,7 +31,7 @@ These are observations from existing history, not new executions from this sync.
 Checked against n8n on 2026-11-06:
 
 - Logger failures in active published Insights, Assistant, and Presentation workflows no longer stop the parent workflow; a failed call can leave its log entry missing. The five ETL logger calls use the same setting in the inactive draft.
-- The active published 12-node version of `GA4 - AI Analytics Assistant` contains three Step 30 logging nodes. Its current saved draft also contains three logger nodes, named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the published nodes use the `Step 30 Log Assistant ...` names. The draft has logger nodes, so the difference is naming, not missing calls. The draft and published versions both include the logging calls.
+- The active published 12-node version and current saved draft of `GA4 - AI Analytics Assistant` both contain three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`.
 - The active published 32-node version of `GA4 - Presentation Generator` contains 15 Step 30 logging calls. Its current saved draft has 32 nodes and includes all 15 logger nodes. Reconcile the logging nodes and connections before publishing the draft, or its runtime flow would lose those calls.
 
 The active published versions remain the runtime reference.
