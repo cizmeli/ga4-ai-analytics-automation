@@ -20,11 +20,10 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 
 ## Runtime and logging verification
 
-- On 2026-11-06, the published Presentation workflow reused an existing presentation for the requested week. Expected stage log events for the presentation and assistant were written. No new Slides file or presentation database record was created.
-- A pinned test of the saved generated-presentation branch recorded all expected stage log events and one run row, then reached the final response using mocked Drive and database outputs. It did not create a real Slides file or database record.
-- A direct pinned Log Writer test reached its completion branch, but the Sheets upserts were pinned, so it performed no external write.
-- The current published generated-presentation path has not had a real new-presentation run after the logging serialization change. A previous real generation run was on an earlier build.
-- The missing-insights then reload branch was not tested in this round.
+- On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow succeeded and created a new Slides deck for the reporting week 2020-12-27 through 2021-01-02; it did not reuse a cached deck.
+- All nine Presentation stages succeeded. Nineteen Log Writer executions in the run window succeeded without retries, and the logger helper remains active.
+- The Assistant final-response row succeeded with `updateRunRow=true`. The later `chat-trigger-start` row had `updateRunRow=false`, skipped Upsert Run Row, and did not overwrite the completed run with stale-start data.
+- This verifies a real new-presentation production run after the serial logger fix. The missing-insights then reload branch was not tested in this round.
 
 Existing history includes insights reports and cached returns for eligible complete weeks. Existing presentation fault-injection cases stopped before save when a copied file ID was missing or a fake Slides ID returned 404; these were expected negative tests, not evidence of a provider outage. Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
 

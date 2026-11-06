@@ -12,7 +12,7 @@ The repository contains setup guidance, sanitized workflow exports, workflow gui
 
 The published, active Presentation Generator runtime contains 41 nodes, including seven presentation-recovery nodes and 16 serialized logging calls. The sanitized, inactive portable export contains 33 nodes: it omits those seven recovery nodes and the final (16th) logger call, leaving 15 logging calls. The export is not a node-for-node copy of the published runtime. See [the workflow guide](../workflows/docs/ga4-presentation-generator.md) for the behavior and verification limits.
 
-The active runtime reused an existing presentation for the requested week after the logging serialization change; expected presentation and assistant stage log events were written, and no new Slides file or presentation database record was created. A pinned generated-branch test wrote the expected log events and a run row, then reached its final response with mocked Drive and database outputs. It did not create real Slides or database records. The current published generated-presentation path has not had a real new-presentation run after that change; the earlier real generation run was on an older build.
+On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached deck. All nine Presentation stages succeeded. Nineteen logger executions in the run window succeeded without retries, and the logger helper remains active. The Assistant final-response row succeeded with `updateRunRow=true`; a later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, so it did not overwrite the completed run with stale-start data. This is runtime evidence for the published production path after the serial logger fix.
 
 The export has not been re-imported into a clean n8n instance. Do not describe it as import-tested.
 
@@ -36,4 +36,4 @@ The export has not been re-imported into a clean n8n instance. Do not describe i
 ## Update log
 
 - 2026-11-06 — redacted public documentation, documented the 41-node published runtime versus the 33-node portable export in commit `74fc388`, and recorded cache-hit and pinned generated-branch verification with its limits.
-- 2026-11-06 — updated the status and presentation guide for serialized logger behavior and current runtime verification.
+- 2026-11-06 — documented a successful real new-presentation production run after the serial logger fix, including successful stage logging and stale-run protection.

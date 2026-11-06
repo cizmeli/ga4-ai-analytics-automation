@@ -17,9 +17,9 @@ The sanitized JSON export contains 33 nodes and is inactive for portable use. It
 
 ## Verification limits
 
-After serialized logging was introduced, the active runtime reused an existing presentation for a requested week and wrote the expected presentation and assistant stage log events. It did not create a new Slides file or presentation database record.
+On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached presentation. All nine Presentation stages succeeded, and 19 logger executions in the run window succeeded without retries. The logger helper remains active.
 
-A pinned test of the generated-presentation branch wrote the expected stage log events and one run row, then reached the final response using mocked Drive and database outputs. It did not perform real Slides or database writes. The current published generated-presentation path has not had a real new-presentation run after the logging change; an earlier real generation run was on an older build. The missing-insights then reload branch was not tested in this round.
+The Assistant final-response row succeeded with `updateRunRow=true`. A later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, preventing stale-start data from overwriting the completed run. The missing-insights then reload branch was not tested in this round.
 
 A clean n8n import has not been validated. Review and configure the export before use.
 
