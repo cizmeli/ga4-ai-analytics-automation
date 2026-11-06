@@ -1,13 +1,13 @@
 # Project status
 
-Snapshot: 2026-11-06 (Europe/Berlin). This reflects the open n8n instance, existing execution history, and the Step 32 no-write evaluation performed on 2026-11-05. It is not a production audit. No workflow was activated or run for this documentation sync.
+Snapshot: 2026-11-06 (Europe/Berlin). This reflects the open n8n instance, existing execution history, and the Step 32 no-write evaluation performed on 2026-11-05. It is not a production audit. The presentation link-return fix was validated without changing workflow activation state.
 
 ## Verified workflow state
 
 - GA4 Weekly ETL is inactive. Its current 10-node configuration has no published active version, and its schedule trigger is deactivated. All available historical sample data through 2021-01-31 is loaded, so no schedule is needed. The current configuration was not runtime-tested for this update; the latest successful ETL execution in reviewed history was 2026-10-25.
 - GA4 - Weekly AI Insights is published and active with a 24-node published graph using the v6 comparison query and prompt. Its query includes purchase_users and prev_purchase_users. It accepts a selected complete week or defaults to the latest eligible pair, requires the immediately preceding complete week, and returns not_found when no eligible comparison exists. It skips LLM generation when the saved week_start and metrics_snapshot match.
 - GA4 - AI Analytics Assistant is published and active with 12 nodes. It has an authenticated chat trigger, OpenRouter model, Simple Memory, three read-only PostgreSQL tools, an on-demand insights tool, and an explicit-request presentation tool. Successful assistant runs were present in reviewed 2026-11-04 history.
-- GA4 - Presentation Generator is published and active with a 32-node published graph. If a requested report is missing, it asks Weekly Insights for that same week, reloads the report, and then reuses or creates a deck. It returns not_found when no eligible insight is produced. Its current parser accepts both legacy colon-title recommendation bullets and two question-style bullets. PowerPoint download remains deactivated.
+- GA4 - Presentation Generator is published and active. Its presentation link-return fix was validated, and its sanitized export is synchronized in this repository.
 - GA4 Project Log Writer is active with 7 nodes. It sanitizes incoming logging payloads and upserts run, stage, and aggregate KPI summaries to a configured Google Sheets destination. The assistant, insights, presentation, and current ETL graphs have Step 30 logging calls. Its portable export is intentionally not included in this public repository.
 - GA4 Temporary Read-only Permission Check is inactive and temporary; it is not part of the product workflow exports.
 - The Metabase dashboard is visible at http://localhost:3001. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
@@ -24,7 +24,7 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 - Existing presentation fault-injection cases stopped before save when the copied file ID was missing or a fake Slides ID returned 404. These were expected negative tests, not evidence of a production provider outage.
 - Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
 
-These are observations from existing history, not new executions from this sync.
+These are observations from prior history; the presentation link-return validation is recorded above.
 
 ## Saved draft and published logging state
 
@@ -32,7 +32,6 @@ Checked against n8n on 2026-11-06:
 
 - Logger failures in active published Insights, Assistant, and Presentation workflows no longer stop the parent workflow; a failed call can leave its log entry missing. The five ETL logger calls use the same setting in the inactive draft.
 - The active published 12-node version and current saved draft of `GA4 - AI Analytics Assistant` both contain three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`.
-- The active published 32-node version of `GA4 - Presentation Generator` contains 15 Step 30 logging calls. Its current saved draft also has 32 nodes and includes all 15 logger nodes.
 
 The active published versions remain the runtime reference.
 
