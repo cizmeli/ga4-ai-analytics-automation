@@ -22,7 +22,7 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 
 - On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow succeeded and created a new Slides deck for the reporting week 2020-12-27 through 2021-01-02; it did not reuse a cached deck.
 - All nine Presentation stages succeeded. Nineteen Log Writer executions in the run window succeeded without retries, and the logger helper remains active.
-- The Assistant final-response row succeeded with `updateRunRow=true`. The later `chat-trigger-start` row had `updateRunRow=false`, skipped Upsert Run Row, and did not overwrite the completed run with stale-start data.
+- The Assistant final-response row succeeded with `runStatus=succeeded` and `updateRunRow=true`. The later `chat-trigger-start` row had `updateRunRow=false`, skipped Upsert Run Row, and did not overwrite the completed run with stale-start data.
 - This verifies a real new-presentation production run after the serial logger fix. The missing-insights then reload branch was not tested in this round.
 
 Existing history includes insights reports and cached returns for eligible complete weeks. Existing presentation fault-injection cases stopped before save when a copied file ID was missing or a fake Slides ID returned 404; these were expected negative tests, not evidence of a provider outage. Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
@@ -39,7 +39,7 @@ The active published versions remain the runtime reference.
 ## Known gaps
 
 - No sanitized workflow export has been re-imported into a disposable n8n instance during this review.
-- A metadata-only Supabase audit was completed. It did not inspect or verify table constraints, grants, or RLS.
+- The metadata-only Supabase audit completed catalog checks of constraints, effective schema/table/column grants, and RLS flags and policies for the three target public tables; it did not read business rows. Business-row validation and data-level policy behavior were not tested.
 - Metabase question accuracy and dashboard data quality have not been audited.
 - The ETL schedule is not running; the historical sample is fully loaded.
 - Device-level analysis is not available in the current assistant tool set.
