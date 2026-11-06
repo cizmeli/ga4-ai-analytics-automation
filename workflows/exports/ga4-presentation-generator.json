@@ -659,7 +659,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -900,7 +900,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -1141,7 +1141,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -1382,7 +1382,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -1623,7 +1623,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -1864,7 +1864,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -2105,7 +2105,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -2346,7 +2346,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -2587,7 +2587,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -2828,7 +2828,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -3069,7 +3069,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -3310,7 +3310,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -3551,7 +3551,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -3792,7 +3792,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     },
     {
@@ -4033,7 +4033,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "stopWorkflow",
+      "onError": "continueRegularOutput",
       "retryOnFail": false
     }
   ],
