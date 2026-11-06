@@ -76,6 +76,8 @@ All included exports omit n8n credential bindings and live workflow, node, webho
 
 ## Update log
 
+- 2026-11-06 — updated the four workflow exports and logger guidance in commit `216d0d3e` after making Step 30 calls non-blocking.
+
 - 2026-11-06 — documented the Step 30 import requirements for 35 calls across the four included exports, Assistant saved-draft logger-name differences, and missing published logging nodes in the Presentation draft; Step 32 evaluation evidence remains dated 2026-11-05.
 - 2026-11-06 — corrected Assistant saved-draft documentation: all three logger nodes are present, with names differing from the published version.
 - 2026-11-04 — documented selected-week on-demand insights and same-week presentation reload behavior.
