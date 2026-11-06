@@ -2,16 +2,18 @@
 
 The Presentation Generator prepares or reuses a presentation for an eligible reporting week. It can be requested through the assistant or started manually.
 
-## Portable export
+## Published runtime
 
-The sanitized JSON export contains 33 nodes and is inactive for portable use. Generic placeholders must be configured for your own environment before use.
-
-## Behavior summary
+The published, active runtime contains 41 nodes. Its graph includes seven presentation-recovery nodes and 16 serialized logging calls, including a final logger call.
 
 - Retrieves the requested week's report, with a fallback to the latest eligible period when no week is specified.
 - If the report is missing, requests an update and checks again. It returns `not_found` when no eligible report is available.
 - Reuses an existing presentation when it matches the source report; otherwise, it prepares a new presentation and returns its link.
-- Presentation logging calls wait for the Log Writer and continue if logging fails.
+- Logging calls wait for the Log Writer and continue if logging fails.
+
+## Portable export
+
+The sanitized JSON export contains 33 nodes and is inactive for portable use. It omits the seven presentation-recovery nodes and the final (16th) logger call, so it contains 15 logging calls and does not exactly match the published runtime. Generic placeholders must be configured for your own environment before use.
 
 ## Verification limits
 
