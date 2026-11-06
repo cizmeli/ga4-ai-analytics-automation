@@ -2,7 +2,7 @@
 
 **Observed state:** published and active on 2026-11-06. The published version has 12 nodes. Chat Trigger requires n8n user authentication. The model is OpenRouter google/gemini-3.1-flash-lite; Simple Memory is connected.
 
-**Saved-draft caution (checked 2026-11-06):** The current saved draft contains none of the three Step 30 logging calls present in the active published graph. Reconcile the logging nodes and connections before publishing the draft; otherwise those runtime calls would be lost. The published version remains the runtime reference.
+**Saved-draft caution (checked 2026-11-06):** The current saved draft has three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the active published version has three `Step 30 Log Assistant ...` nodes. The logger nodes are present in both versions, so the difference is their names, not missing calls. Keep the published version as the runtime reference and reconcile the node names before publishing the draft.
 
 ## Node order and purpose
 

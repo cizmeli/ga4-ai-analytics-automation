@@ -30,7 +30,7 @@ These are observations from existing history, not new executions from this sync.
 
 Checked against n8n on 2026-11-06:
 
-- The active published 12-node version of `GA4 - AI Analytics Assistant` contains three Step 30 logging calls. Its current saved draft contains none. Keep the published version as the runtime reference; reconcile the logging nodes and connections before publishing the draft.
+- The active published 12-node version of `GA4 - AI Analytics Assistant` contains three Step 30 logging nodes. Its current saved draft also contains three logger nodes, named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the published nodes use the `Step 30 Log Assistant ...` names. The draft has logger nodes, so the difference is naming, not missing calls. Keep the published version as the runtime reference and reconcile the node names before publishing the draft.
 - The active published 32-node version of `GA4 - Presentation Generator` contains 15 Step 30 logging calls. Its current saved draft has 17 nodes and contains none. Reconcile the logging nodes and connections before publishing the draft, or its runtime flow would lose those calls.
 
 The active published versions remain the runtime reference.
