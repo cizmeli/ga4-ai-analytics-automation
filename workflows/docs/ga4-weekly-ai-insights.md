@@ -1,61 +1,83 @@
 # GA4 Weekly AI Insights
 
-## Purpose and current state
+## Purpose and published state
 
-This workflow compares a selected complete Sunday-to-Saturday week in `public.weekly_kpis` with its immediately preceding complete week, asks an OpenRouter model for a concise, evidence-bounded executive analysis, and upserts the result into `public.weekly_insights`. It was published and active in n8n on 2026-11-04. The Weekly ETL remains inactive; the Assistant's on-demand tool is the active request path.
+This workflow compares a selected complete Sunday-to-Saturday week in public.weekly_kpis with its immediately preceding complete week, asks an OpenRouter model for a bounded executive analysis, and upserts the report into public.weekly_insights. The published 24-node version is active. The inactive ETL is not its automatic schedule path; the Assistant's on-demand insights tool is the active request path.
 
-The workflow accepts an explicit `requested_week`; if omitted, it uses the latest eligible complete-week pair. A selected week requires a consecutive complete predecessor. If no valid pair exists, the workflow returns `not_found`.
+The workflow accepts a requested_week; if omitted, it uses the latest eligible complete-week pair. The selected week needs a consecutive complete predecessor. If no valid pair exists, the workflow returns not_found.
 
-The credential-free export is [`../exports/ga4-weekly-ai-insights.json`](../exports/ga4-weekly-ai-insights.json). It removes instance-specific workflow/node IDs and credential bindings. Reconnect credentials after import.
+The sanitized published export is [ga4-weekly-ai-insights.json](../exports/ga4-weekly-ai-insights.json). It omits credential bindings and live identifiers, and has active=false for safe import.
 
 ## Trigger and processing
 
-1. **Manual trigger** — execute the workflow for a controlled test.
-2. **Called-workflow trigger** — used by the AI Assistant's on-demand insights tool. The inactive ETL also has an invocation node, but its schedule is disabled.
-3. **Get Weekly Comparison** — selects the requested complete week, or the latest eligible pair by default. It excludes partial periods, requires the prior week to end the day before the selected week begins, and computes WoW changes for users, purchases, revenue, and revenue per purchase, plus conversion-rate change in percentage points.
-4. **Weekly KPI Comparison Found?** — IF node. If no valid selected-week/prior-week pair exists, it branches to **Return Missing KPI**, which returns `not_found` and stops the workflow before cache/LLM/save.
-5. **Check Report Needs Generation** — looks for a saved row with the selected `week_start` and an identical JSONB `metrics_snapshot`. The `requested_week` input is excluded from snapshot equality. This checker determines the generation decision; it does not itself emit the final `status=cached`.
-6. **Needs AI Generation?** — IF node branches on the cache result. A matching snapshot goes to **Return Saved Insights**; a new or changed snapshot goes to **Generate Weekly Insights**.
-7. **Generate Weekly Insights** — asks for an English report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations. It is bounded to SQL results and historical/anonymized-data context, without unsupported causal claims.
-8. **OpenRouter Chat Model** — observed model `google/gemini-3.1-flash-lite`, temperature 0.2, max output 1000 tokens.
-9. **Save Weekly Insights** — parameterized Postgres upsert keyed by `week_start`; stores report markdown, metrics snapshot, model name, and generation timestamp.
-10. **Return Generated Insights** — returns the newly generated and saved report.
-11. **Return Saved Insights** — returns the existing saved row for a cache hit with `status=cached`, without running the insights-generation LLM or save node.
+1. **When clicking ‘Execute workflow’** — controlled manual execution.
+2. **When Executed by Another Workflow** — called by the Assistant's on-demand insights tool.
+3. **Get Weekly Comparison** — selects the requested complete week or the latest eligible pair. It excludes partial periods, requires the prior week to end the day before the selected week begins, and computes user, purchase, revenue, revenue-per-purchase, and conversion-rate changes.
+4. **Weekly KPI Comparison Found?** — routes a missing eligible pair to **Return Missing KPI** with not_found, before cache, LLM, or save.
+5. **Check Report Needs Generation** — checks the selected week_start and JSONB metrics_snapshot; requested_week is not part of snapshot equality.
+6. **Needs AI Generation?** — sends a matching snapshot to **Return Saved Insights**; a new or changed snapshot continues to generation.
+7. **Generate Weekly Insights** — requests an English, evidence-bounded report under 300 words with Executive Summary, KPI Performance, Key Findings, and Recommended Investigations.
+8. **OpenRouter Chat Model** — google/gemini-3.1-flash-lite, temperature 0.2, max output 1000 tokens.
+9. **Save Weekly Insights** — parameterized Postgres upsert keyed by week_start.
+10. **Return Generated Insights** — returns a newly generated and saved report.
+11. **Return Saved Insights** — returns a matching saved report with status=cached, without running the insights-generation LLM or save node.
+12. **Return Missing KPI** — returns not_found when the selected week has no eligible consecutive comparison.
 
-The current comparison output carries `prompt_version=weekly-insights-v1`. Existing execution `1115` generated and saved the `2020-11-22` report; `1116` returned it through the saved-insights branch at `generated_at=2026-11-04T20:44:33.798Z`. See [status evidence](../../docs/STATUS.md).
+The current published comparison output does not include prev_purchase_users. The separate Step 32 v6 draft adds that field; see [draft SQL](../../sql/ga4-weekly-insights-v6-draft.sql). The draft is not part of the published export.
 
-## Query and persistence details
+## Step 30 logging nodes
 
-The exact SQL and parameter expressions are preserved in the export. The comparison query uses only `weekly_kpis`; it does not query raw GA4 events or establish business causality. `revenue_per_purchase_usd` is descriptive and is not asserted to be a validated average order value.
+The published graph has 12 logging calls to the shared Project Log Writer: two trigger/start nodes; comparison fetch; both comparison-availability branches; both report-generation decision branches; model generation; persistence; and three return branches. They log stage summaries and do not replace report persistence.
 
-The cache check compares the selected `week_start` and JSONB `metrics_snapshot`; the request input itself does not affect snapshot equality. The current prompt version is `weekly-insights-v1`. Review the live workflow before changing the versioning scheme or assuming a prompt edit invalidates a cached row.
+## Step 32 v6 draft and evaluation
 
-## Conditional presentation flow
-
-This workflow does not call the presentation generator. The Assistant routes an insights-only request here and calls the presentation workflow only when the user explicitly requests slides. A cache hit here therefore does not create a deck.
+The unpublished v6 draft adds purchase_users and prev_purchase_users to the comparison projection. It passed 8/8 no-write output hard gates on 2026-11-05. The test used pinned data and does not publish or activate the SQL. Keep the separate draft query separate from the published workflow export.
 
 ## Limitations and safe operation
 
-- A report requires a selected complete week and its immediately preceding consecutive complete week. Requesting `2020-10-25` returned `not_found` because no eligible comparison was available.
-- A malformed `requested_week` such as `not-a-date` currently fails at the date comparison with a database parsing error; it does not reach the LLM or save node.
-- This workflow uses aggregated weekly KPIs, not raw GA4 events, and does not establish causality.
-- The sanitized export has no credentials. Select least-privilege PostgreSQL and OpenRouter credentials after import; never commit credential exports or tokens.
-- Validate SQL, schema, connection permissions, and model output in a disposable environment before activation.
+- A report requires an eligible complete week and its immediately preceding complete week. A partial or unsupported week returns not_found.
+- A malformed requested_week currently fails at the date comparison with a database parsing error; it does not reach the LLM or save node.
+- The query uses aggregated weekly KPIs, not raw GA4 events, and does not establish business causality. Revenue per purchase is descriptive and is not asserted to be a validated average order value.
+- The sanitized export has no credentials. Rebind least-privilege PostgreSQL and OpenRouter credentials after import.
+- Database constraints, permissions, and model output were not revalidated as part of this GitHub sync.
 
 ## Workflow diagram
 
-```mermaid
+~~~mermaid
 flowchart LR
   M[Manual Trigger] --> Q[Get Weekly Comparison]
   C[Assistant Called Workflow] --> Q
-  ETL[Inactive Weekly ETL] -. disabled invocation .-> Q
-  Q --> F{Weekly KPI Comparison Found?}
-  F -->|no| MK[Return Missing KPI: not_found]
+  Q -.-> L3[Step 30 Log: comparison fetch]
+  Q --> F{Eligible comparison?}
+  F -->|no| MK[Return Missing KPI]
+  F -.-> L4[Step 30 Log: no comparison]
+  F -.-> L5[Step 30 Log: comparison found]
   F -->|yes| K[Check Report Needs Generation]
+  K -.-> L6[Step 30 Log: generation decision]
   K --> B{Needs AI Generation?}
-  B -->|yes: new or changed snapshot| L[Generate Weekly Insights]
-  L --> S[Save Weekly Insights]
-  S --> RG[Return Generated Insights]
-  B -->|no: matching snapshot| R[Return Saved Insights: status cached]
-  O[OpenRouter Chat Model] -. language model .-> L
-```
+  B -->|yes| G[Generate Weekly Insights]
+  G -.-> L8[Step 30 Log: model generation]
+  G --> S[Save Weekly Insights]
+  S -.-> L9[Step 30 Log: persistence]
+  S --> R1[Return Generated Insights]
+  B -->|no| R2[Return Saved Insights]
+  R1 -.-> L10[Step 30 Log: generated return]
+  R2 -.-> L11[Step 30 Log: cached return]
+  MK -.-> L12[Step 30 Log: not_found return]
+  M -.-> L1[Step 30 Log: manual start]
+  C -.-> L2[Step 30 Log: called start]
+  L1 --> LOG[GA4 Project Log Writer]
+  L2 --> LOG
+  L3 --> LOG
+  L4 --> LOG
+  L5 --> LOG
+  L6 --> LOG
+  L8 --> LOG
+  L9 --> LOG
+  L10 --> LOG
+  L11 --> LOG
+  L12 --> LOG
+  O[OpenRouter Chat Model] -.-> G
+~~~
+
+Current published workflow export: [ga4-weekly-ai-insights.json](../exports/ga4-weekly-ai-insights.json).

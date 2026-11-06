@@ -13,7 +13,7 @@
         -112,
         -32
       ],
-      "id": "94fa8dcd-b397-4c21-8d20-786d3c935a85",
+      "id": "afbb4d73-734a-444a-854a-764a468f774a",
       "name": "Supabase-Get Next Week"
     },
     {
@@ -36,7 +36,7 @@
         -336,
         -32
       ],
-      "id": "0ac06708-321e-403c-a3f8-7ae83022a9d7",
+      "id": "8f63751f-aa21-4b21-8421-a52111c3a621",
       "name": "Schedule Trigger",
       "disabled": true
     },
@@ -44,10 +44,8 @@
       "parameters": {
         "projectId": {
           "__rl": true,
-          "value": "msit-project-ozan",
-          "mode": "list",
-          "cachedResultName": "MSIT",
-          "cachedResultUrl": "https://console.cloud.google.com/bigquery?project=msit-project-ozan"
+          "value": "REPLACE_WITH_GCP_PROJECT_ID",
+          "mode": "list"
         },
         "sqlQuery": "\nSELECT\n  DATE '{{ $json.week_start }}' AS week_start,\n  DATE '{{ $json.week_end }}' AS week_end,\n\n  COUNT(*) AS total_events,\n\n  COUNT(DISTINCT user_pseudo_id) AS total_users,\n\n  COUNTIF(event_name = 'purchase') AS purchases,\n\n  COUNT(DISTINCT IF(\n    event_name = 'purchase',\n    user_pseudo_id,\n    NULL\n  )) AS purchase_users,\n\n  ROUND(\n    SUM(\n      IF(\n        event_name = 'purchase',\n        COALESCE(ecommerce.purchase_revenue_in_usd, 0),\n        0\n      )\n    ),\n    2\n  ) AS revenue_usd\n\nFROM\n  `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`\n\nWHERE\n  _TABLE_SUFFIX BETWEEN\n    REPLACE('{{ $json.week_start }}', '-', '')\n    AND\n    REPLACE('{{ $json.week_end }}', '-', '');\n",
         "options": {}
@@ -58,7 +56,7 @@
         112,
         -32
       ],
-      "id": "d636aa01-ea61-4351-a010-809be9738734",
+      "id": "c758c8ec-40ba-4fba-8aba-39bac8a83cba",
       "name": "BigQuery-Weekly KPIs"
     },
     {
@@ -67,14 +65,12 @@
         "schema": {
           "__rl": true,
           "value": "public",
-          "mode": "list",
-          "cachedResultName": "public"
+          "mode": "list"
         },
         "table": {
           "__rl": true,
           "value": "weekly_kpis",
-          "mode": "list",
-          "cachedResultName": "weekly_kpis"
+          "mode": "list"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
@@ -174,17 +170,15 @@
         336,
         -32
       ],
-      "id": "08470636-ab24-4174-85d9-a415da0bb2b3",
+      "id": "933725e1-5f20-4020-8d20-5e2054b95b20",
       "name": "Supabase-Upsert KPIs"
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "SI7c2Q3e0HMBEVD7",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/SI7c2Q3e0HMBEVD7",
-          "cachedResultName": "GA4 - Weekly AI Insights"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "mode": "list"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -204,8 +198,1213 @@
         544,
         -32
       ],
-      "id": "ccaf1e77-3330-499c-acef-e4ab22ba2dbb",
+      "id": "eb7b5213-8120-4220-8320-842034af8520",
       "name": "Trigger Weekly AI Insights"
+    },
+    {
+      "id": "0a58a552-2c15-4b15-8215-311522f23015",
+      "name": "Step 30 Log ETL 01 trigger/start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "trigger/start",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 0,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "ab7079a6-7a15-4915-8815-7714ff4e7614",
+      "name": "Step 30 Log ETL 02 weekly window fetch",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        130
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Supabase-Get Next Week\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "weekly window fetch",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Schedule Trigger\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "3fff8ca3-83c6-44c6-85c6-86c63f7f87c6",
+      "name": "Step 30 Log ETL 03 aggregate KPI computation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        260
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Supabase-Get Next Week\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "aggregate KPI computation",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Supabase-Get Next Week\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [ { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"total_events\", currentValue: $json.total_events, source: \"BigQuery-Weekly KPIs\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"total_users\", currentValue: $json.total_users, source: \"BigQuery-Weekly KPIs\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"purchases\", currentValue: $json.purchases, source: \"BigQuery-Weekly KPIs\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"purchase_users\", currentValue: $json.purchase_users, source: \"BigQuery-Weekly KPIs\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"revenue_usd\", currentValue: $json.revenue_usd, source: \"BigQuery-Weekly KPIs\" } ].filter(k => k.period && k.currentValue !== undefined && k.currentValue !== null) }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "1df180ba-f488-4388-8a88-f9887b1af888",
+      "name": "Step 30 Log ETL 04 KPI persistence",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        390
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Supabase-Get Next Week\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "KPI persistence",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"BigQuery-Weekly KPIs\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Supabase aggregate upsert + AI Insights handoff",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "bd8d2eeb-f6c3-47c3-88c3-f9c35587fac3",
+      "name": "Step 30 Log ETL 05 weekly insights handoff",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        900,
+        520
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Supabase-Get Next Week\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "weekly insights handoff",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Supabase-Upsert KPIs\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Supabase aggregate upsert + AI Insights handoff",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
     }
   ],
   "connections": {
@@ -214,6 +1413,11 @@
         [
           {
             "node": "BigQuery-Weekly KPIs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log ETL 02 weekly window fetch",
             "type": "main",
             "index": 0
           }
@@ -227,6 +1431,11 @@
             "node": "Supabase-Get Next Week",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log ETL 01 trigger/start",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -238,6 +1447,11 @@
             "node": "Supabase-Upsert KPIs",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log ETL 03 aggregate KPI computation",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -247,6 +1461,22 @@
         [
           {
             "node": "Trigger Weekly AI Insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log ETL 04 KPI persistence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Weekly AI Insights": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log ETL 05 weekly insights handoff",
             "type": "main",
             "index": 0
           }
@@ -262,13 +1492,5 @@
     "timeSavedMode": "fixed",
     "timezone": "Europe/Berlin",
     "callerPolicy": "workflowsFromSameOwner"
-  },
-  "versionId": "5dd4d7b1-f79e-41b7-ba3b-6f23d94cba86",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "04255b42a91f8a0a7b14051df41a71c1fb90b851d24df88e29c646bb7a24ee3f"
-  },
-  "nodeGroups": [],
-  "id": "bcL8FcHlv3O3bacQ",
-  "tags": []
+  }
 }

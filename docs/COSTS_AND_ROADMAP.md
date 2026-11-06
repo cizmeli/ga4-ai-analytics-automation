@@ -2,18 +2,19 @@
 
 ## Cost model
 
-- BigQuery public sample data is publicly readable; queries still consume project quota and can incur scan charges depending on billing setup. Always filter `_TABLE_SUFFIX`.
+- BigQuery public sample data is publicly readable; queries still consume project quota and can incur scan charges depending on billing setup. Always filter _TABLE_SUFFIX.
 - Supabase, Metabase OSS, local Docker, and n8n deployment costs depend on account tier, hosting, availability, storage, and current vendor terms. Recheck pricing before use.
 - OpenRouter inference cost depends on model pricing, token usage, prompt size, and routing. No cost estimate is asserted because live pricing and usage are not captured here.
-- Google Slides API quota and Drive storage apply to presentation creation and update operations.
-- Local scheduling stops when the host or Docker is stopped.
+- Google Slides API quota and Drive storage apply to presentation creation and updates.
+- The Project Log Writer makes Google Sheets API writes for run, stage, and aggregate KPI records; this document does not estimate quota or cost.
+- Local scheduling stops when the host or Docker is stopped. The historical sample is fully loaded and the ETL schedule remains disabled.
 
 ## Roadmap
 
-1. Confirm `weekly_insights` table constraints, column types, and least-privilege grants against the live database; exercise the saved workflow in a disposable environment.
+1. Confirm weekly_kpis, weekly_insights, and weekly_presentations constraints, column types, and least-privilege grants against the live database.
 2. Audit Metabase datasource, questions, dashboard filters, chart calculations, and data range.
-3. Test ETL date boundary, empty-week behavior, data checks, and idempotent upsert in a disposable setup.
-4. Decide whether weekly insights should be schedule-driven, ETL-triggered, or user-requested. Current wiring invokes insights from ETL, with a manual trigger also available, but both workflows are inactive. Preserve arbitrary historical on-demand generation as a proposal until implemented and tested.
-5. Add a dedicated read-only role and audit direct PostgreSQL grants/RLS.
-6. Add device KPIs only after creating and validating their grain and schema.
-7. Add a license and screenshots/diagram assets after confirming redistribution rights.
+3. If the project adds a new data period, test ETL date boundaries, empty-week behavior, validation, and idempotency in a disposable setup.
+4. Keep the selected-complete-week on-demand insights path and the inactive ETL schedule documented separately.
+5. Review the unpublished Step 32 v6 purchase-user comparison draft before deciding whether to publish it.
+6. Add device KPIs only after defining and validating their grain and schema.
+7. Confirm redistribution rights before adding a license, screenshots, or other assets.

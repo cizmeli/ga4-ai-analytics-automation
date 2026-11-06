@@ -1,50 +1,37 @@
 # Project status
 
-Snapshot: 2026-11-04 (Europe/Berlin). This status reflects the open n8n instance and its existing execution history; it is not a production audit. No new workflow runs were launched for this documentation update.
+Snapshot: 2026-11-06 (Europe/Berlin). This reflects the open n8n instance, existing execution history, and the Step 32 no-write evaluation performed on 2026-11-05. It is not a production audit. No workflow was activated or run for this documentation sync.
 
-## Verified from the open n8n instance
+## Verified workflow state
 
-- `GA4 Weekly ETL` exists and has five nodes in this order: schedule trigger → Supabase next-week query → BigQuery weekly aggregation → Supabase upsert → invoke Weekly AI Insights. It is inactive and the schedule trigger is deactivated.
-- The ETL workflow is inactive, and its schedule trigger visibly reads **Deactivated**.
-- `GA4 - AI Analytics Assistant` is published/active and contains an authenticated chat trigger, OpenRouter Chat Model (`google/gemini-3.1-flash-lite`), AI Agent, Simple Memory, three PostgreSQL read tools, an on-demand insights tool, and a presentation workflow tool. Insights-only requests do not call the presentation tool; slides are called only for explicit requests.
-- The assistant's latest-week and trend queries use `weekly_kpis`; saved insights reads `weekly_insights`.
-- `GA4 - Presentation Generator` is published/active. If the requested week's insight is missing, it calls Weekly Insights for that same week, reloads that week's report, and then checks the presentation cache; if no eligible insight can be produced, it returns `not_found`. Otherwise it reuses a cached deck or copies a template, updates Slides, saves the presentation reference, and returns a link. PowerPoint download remains deactivated.
-- Browser tabs show the local Metabase dashboard and the assistant chat endpoint.
-- Credential-free exports exist for ETL, AI Assistant, Presentation Generator, and Weekly AI Insights.
-- `GA4 - Weekly AI Insights` is published/active with manual and called-workflow triggers. It supports a selected complete week, requires the consecutive prior week, and checks the selected `week_start` and JSONB `metrics_snapshot`. A matching snapshot flows through **Needs AI Generation?** to **Return Saved Insights**; the checker itself does not emit the final `status=cached`. The comparison output carries `prompt_version=weekly-insights-v1`; `requested_week` is excluded from snapshot equality.
+- GA4 Weekly ETL is inactive. Its current 10-node configuration has no published active version, and its schedule trigger is deactivated. All available historical sample data through 2021-01-31 is loaded, so no schedule is needed. The current configuration was not runtime-tested for this update; the latest successful ETL execution in reviewed history was 2026-10-25.
+- GA4 - Weekly AI Insights is published and active with a 24-node published graph. It accepts a selected complete week or defaults to the latest eligible pair, requires the immediately preceding complete week, and returns not_found when no eligible comparison exists. It skips LLM generation when the saved week_start and metrics_snapshot match.
+- GA4 - AI Analytics Assistant is published and active with 12 nodes. It has an authenticated chat trigger, OpenRouter model, Simple Memory, three read-only PostgreSQL tools, an on-demand insights tool, and an explicit-request presentation tool. Successful assistant runs were present in reviewed 2026-11-04 history.
+- GA4 - Presentation Generator is published and active with a 32-node published graph. If a requested report is missing, it asks Weekly Insights for that same week, reloads the report, and then reuses or creates a deck. It returns not_found when no eligible insight is produced. PowerPoint download remains deactivated.
+- GA4 Project Log Writer is active with 7 nodes. It sanitizes incoming logging payloads and upserts run, stage, and aggregate KPI summaries to a configured Google Sheets destination. The assistant, insights, presentation, and current ETL graphs have Step 30 logging calls. Its portable export is intentionally not included in this public repository.
+- GA4 Temporary Read-only Permission Check is inactive and temporary; it is not part of the product workflow exports.
+- The Metabase dashboard is visible at http://localhost:3001. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
 
-## Known but not verified in this pass
+## Step 32 draft and evaluation
 
-- The project plan says BigQuery weekly aggregation returned one row, Supabase table and Postgres connection were created, and initial weekly metrics were checked. These statements are carried forward from user-confirmed project notes, not newly re-run.
-- Dashboard data accuracy, SQL question definitions, refresh behavior, and visual QA have not been audited.
-- The Weekly AI Insights export was structurally parsed locally but has not been re-imported into a separate n8n instance. Its referenced Postgres and OpenRouter credentials are intentionally omitted.
-- Metabase is planned on port 3001, but Docker lifecycle and datasource permissions were not inspected.
-- Supabase table definitions for `weekly_insights` and `weekly_presentations` must be confirmed against the actual database before applying the example schema.
+The unpublished v6 draft of the Weekly Insights comparison query adds purchase_users and prev_purchase_users. The separate draft SQL is [ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql). It is not included in the published workflow export and has not been activated.
 
-## Not implemented or not established
+The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05. It used pinned test data; logging nodes returned no_write/test_only, and the retest did not persist workflow output. The independent reviewer classified the “contribute to the observed change” wording as arithmetic decomposition, not a business-causality claim.
 
-- On-demand insight requests can target a complete week when an eligible consecutive comparison exists. Requests without an eligible comparison return `not_found`; this is bounded by the available historical dataset.
-- Device breakdown is not in the current assistant tool set.
-- ETL schedule is not running.
-- No real API keys, database passwords, OAuth tokens, presentation IDs, or workflow credential IDs are committed here.
+## Existing execution evidence reviewed
 
-## Existing execution evidence reviewed on 2026-11-04
+- Existing Weekly Insights history includes generated reports and cached returns for eligible complete weeks. A cache hit skips the insights-generation LLM and save node.
+- Existing presentation fault-injection cases stopped before save when the copied file ID was missing or a fake Slides ID returned 404. These were expected negative tests, not evidence of a production provider outage.
+- Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
 
-These IDs are existing executions reviewed for Step 26, not new runs from this documentation update.
+These are observations from existing history, not new executions from this sync.
 
-| Execution(s) | Verified result |
-|---|---|
-| `1103`, `1104` | Week `2020-10-25` returned `not_found` for a KPI comparison and a saved insight; no LLM, Slides, Drive, or save node ran. |
-| `1105` → `1106` | An insights-only assistant request called Weekly Insights, whose child returned `status=cached` for `2020-11-29`. No insights-generation LLM/save node or presentation subexecution ran; the assistant's own model/routing still ran. |
-| `1108`, `1111` | `1108` created/saved a deck; `1111` reused it without template copy, placeholder fill, or presentation-record save. |
-| `1112` | `requested_week=not-a-date` failed at Get Weekly Comparison: `invalid input syntax for type date: "not-a-date"`; no downstream nodes ran. |
-| `1113`, `1114` | Missing copied presentation ID failed before Slides/Save with `Copied presentation ID is missing`; a fake ID returned provider 404 `The resource you are requesting could not be found` before Save. These were pinned fault-injection runs; no Drive copy occurred. |
-| `1115` → `1116` | `1115` generated/saved the `2020-11-22` insight. `1116` returned it as cached with `prompt_version=weekly-insights-v1` and `generated_at=2026-11-04T20:44:33.798Z`. |
+## Known gaps
 
-Read-only execution inspection commands (these do not trigger workflows):
-
-```sh
-/opt/homebrew/bin/n8n-cli workflow list --name=GA4 --format=table --limit=10
-/opt/homebrew/bin/n8n-cli execution list --workflow=<workflow-id> --limit=10 --format=table
-/opt/homebrew/bin/n8n-cli execution get <execution-id> --format=table
-```
+- No sanitized workflow export has been re-imported into a disposable n8n instance during this review.
+- Actual Supabase table constraints, grants, and RLS have not been independently checked.
+- Metabase question accuracy and dashboard data quality have not been audited.
+- The ETL schedule is not running; the historical sample is fully loaded.
+- Device-level analysis is not available in the current assistant tool set.
+- Weekly comparisons are limited to complete weeks and the available historical sample.
+- No API keys, passwords, OAuth tokens, credential contents, live personal data, or execution payloads belong in this repository.

@@ -9,14 +9,16 @@
         -16,
         16
       ],
-      "id": "dfa9fc26-968e-4e0a-8ba9-e7d02688a44a",
+      "id": "0f19dc18-a104-4004-8304-a204dfcca504",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    report_markdown,\n    metrics_snapshot,\n    model_name,\n    generated_at\nFROM public.weekly_insights\nWHERE week_end - week_start = 6\nORDER BY week_start DESC\nLIMIT 1;\n",
-        "options": {}
+        "query": "SELECT d.*, $1::text AS requested_week\nFROM (SELECT 1) AS input\nLEFT JOIN LATERAL (\n  SELECT week_start::text AS week_start, week_end::text AS week_end,\n         report_markdown, metrics_snapshot, model_name, generated_at::text AS generated_at\n  FROM public.weekly_insights\n  WHERE week_end - week_start = 6\n    AND (NULLIF($1::text, '') IS NULL OR week_start = NULLIF($1::text, '')::date)\n  ORDER BY week_start DESC\n  LIMIT 1\n) AS d ON true;",
+        "options": {
+          "queryReplacement": "={{ [ $json.week_start || '' ] }}"
+        }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
@@ -24,7 +26,7 @@
         208,
         -80
       ],
-      "id": "1658a08a-b116-4acf-85e2-593fdd689b49",
+      "id": "05d91b2e-9f09-4e09-8d09-9c09ab569b09",
       "name": "Get Presentation Data"
     },
     {
@@ -32,7 +34,7 @@
         "operation": "copy",
         "fileId": {
           "__rl": true,
-          "value": "1KNtzp_amcdBkZsV0_Po8YdqDx9RSN4u1oav7kHUusaA",
+          "value": "REPLACE_WITH_GOOGLE_DRIVE_FILE_ID",
           "mode": "id"
         },
         "name": "={{ 'GA4 Weekly Report - ' + $json.week_start }}",
@@ -44,12 +46,12 @@
         880,
         -176
       ],
-      "id": "383aed4e-bd0b-464b-ade7-5324b02da282",
+      "id": "87bb125a-8b79-4a79-8179-9079ab3a8f79",
       "name": "Copy Presentation Template"
     },
     {
       "parameters": {
-        "jsCode": "\nconst source = $('Get Presentation Data').first().json;\nconst presentationId = $input.first().json.id;\n\nif (!presentationId) {\n  throw new Error('Copied presentation ID is missing');\n}\n\nconst m = typeof source.metrics_snapshot === 'string'\n  ? JSON.parse(source.metrics_snapshot)\n  : source.metrics_snapshot;\n\n// Normalize the AI-generated Markdown.\nconst report = String(source.report_markdown || '')\n  .replace(/\\\\n/g, '\\n');\n\n// Extract a numbered report section.\nfunction section(number) {\n  const heading = new RegExp(\n    `^#{1,4}\\\\s*${number}\\\\.\\\\s*[^\\\\n]*$`, 'mi'\n  );\n  const match = heading.exec(report);\n\n  if (!match) {\n    throw new Error(`Report section ${number} not found`);\n  }\n\n  const remaining = report.slice(\n    match.index + match[0].length\n  );\n\n  return remaining\n    .split(/\\n(?=#{1,4}\\s*\\d+\\.\\s)/)[0]\n    .trim()\n    .replace(/\\*\\*/g, '');\n}\n\n// Format numbers safely.\nfunction num(key) {\n  const value = Number(m[key]);\n\n  if (!Number.isFinite(value)) {\n    throw new Error(`Invalid metric: ${key}`);\n  }\n\n  return value;\n}\n\nfunction integer(key) {\n  return num(key).toLocaleString('en-US');\n}\n\nfunction usd(key) {\n  return '$' + num(key).toLocaleString('en-US', {\n    minimumFractionDigits: 2,\n    maximumFractionDigits: 2\n  });\n}\n\nfunction change(key, suffix = '%') {\n  const value = num(key);\n\n  return (value > 0 ? '+' : '') +\n    value.toFixed(2) + suffix;\n}\n\n\nfunction movement(key) {\n  const value = num(key);\n\n  if (value === 0) return 'remained unchanged';\n\n  return `${value < 0 ? 'fell' : 'rose'} ${Math.abs(value).toFixed(2)}%`;\n}\n\nfunction shortFindings() {\n  const conversionChange = num('conversion_change_pp');\n\n  return [\n    `Revenue ${movement('revenue_wow_pct')}; purchases ${movement('purchases_wow_pct')}.`,\n\n    `Revenue per purchase ${movement('revenue_per_purchase_wow_pct')} (${usd('prev_revenue_per_purchase_usd')} to ${usd('revenue_per_purchase_usd')}).`,\n\n    `Conversion rate changed by ${conversionChange > 0 ? '+' : ''}${conversionChange.toFixed(2)} pp to ${num('conversion_rate_pct').toFixed(2)}%.`\n  ].join('\\n\\n');\n}\n\nfunction shortRecommendations() {\n  const recommendations = section(4);\n\n  const titles = [...recommendations.matchAll(\n    /(?:^|\\n)\\s*\\d+[.)]\\s*([^:\\n]{4,90}):/g\n  )]\n    .map(match => match[1].trim())\n    .slice(0, 2);\n\n  if (titles.length !== 2) {\n    throw new Error('Could not extract two investigation titles');\n  }\n\n  return titles\n    .map((title, index) => `${index + 1}. Investigate ${title.toLowerCase()}.`)\n    .join('\\n\\n');\n}\n\n\n// Map all template placeholders.\nconst fields = {\n  REPORTING_WEEK:\n    `${source.week_start} to ${source.week_end}`,\n\n  EXECUTIVE_SUMMARY: section(1),\n\n  USERS: integer('total_users'),\n  USERS_WOW: change('users_wow_pct'),\n\n  PURCHASES: integer('purchases'),\n  PURCHASES_WOW: change('purchases_wow_pct'),\n\n  REVENUE: usd('revenue_usd'),\n  REVENUE_WOW: change('revenue_wow_pct'),\n\n  CONVERSION_RATE:\n    num('conversion_rate_pct').toFixed(2) + '%',\n\n  CONVERSION_CHANGE_PP:\n    change('conversion_change_pp', ' pp'),\n\n  REVENUE_PER_PURCHASE:\n    usd('revenue_per_purchase_usd'),\n\n  RPP_WOW:\n    change('revenue_per_purchase_wow_pct'),\n\n  KEY_FINDINGS: shortFindings(),\n  RECOMMENDATIONS: shortRecommendations()\n};\n\n// Build Google Slides replacement requests.\nconst requests = Object.entries(fields).map(\n  ([name, value]) => ({\n    replaceAllText: {\n      containsText: {\n        text: `{{${name}}}`,\n        matchCase: true\n      },\n      replaceText: String(value)\n    }\n  })\n);\n\nreturn [{\n  json: {\n    presentationId,\n    placeholderCount: requests.length,\n    requests\n  }\n}];\n"
+        "jsCode": "\nconst source = $('Reload Presentation Data').isExecuted\n  ? $('Reload Presentation Data').first().json\n  : $('Get Presentation Data').first().json;\nconst presentationId = $input.first().json.id;\n\nif (!presentationId) {\n  throw new Error('Copied presentation ID is missing');\n}\n\nconst m = typeof source.metrics_snapshot === 'string'\n  ? JSON.parse(source.metrics_snapshot)\n  : source.metrics_snapshot;\n\n// Normalize the AI-generated Markdown.\nconst report = String(source.report_markdown || '')\n  .replace(/\\\\n/g, '\\n');\n\n// Extract a numbered report section.\nfunction section(number) {\n  const heading = new RegExp(\n    `^#{1,4}\\\\s*${number}\\\\.\\\\s*[^\\\\n]*$`, 'mi'\n  );\n  const match = heading.exec(report);\n\n  if (!match) {\n    throw new Error(`Report section ${number} not found`);\n  }\n\n  const remaining = report.slice(\n    match.index + match[0].length\n  );\n\n  return remaining\n    .split(/\\n(?=#{1,4}\\s*\\d+\\.\\s)/)[0]\n    .trim()\n    .replace(/\\*\\*/g, '');\n}\n\n// Format numbers safely.\nfunction num(key) {\n  const value = Number(m[key]);\n\n  if (!Number.isFinite(value)) {\n    throw new Error(`Invalid metric: ${key}`);\n  }\n\n  return value;\n}\n\nfunction integer(key) {\n  return num(key).toLocaleString('en-US');\n}\n\nfunction usd(key) {\n  return '$' + num(key).toLocaleString('en-US', {\n    minimumFractionDigits: 2,\n    maximumFractionDigits: 2\n  });\n}\n\nfunction change(key, suffix = '%') {\n  const value = num(key);\n\n  return (value > 0 ? '+' : '') +\n    value.toFixed(2) + suffix;\n}\n\n\nfunction movement(key) {\n  const value = num(key);\n\n  if (value === 0) return 'remained unchanged';\n\n  return `${value < 0 ? 'fell' : 'rose'} ${Math.abs(value).toFixed(2)}%`;\n}\n\nfunction shortFindings() {\n  const conversionChange = num('conversion_change_pp');\n\n  return [\n    `Revenue ${movement('revenue_wow_pct')}; purchases ${movement('purchases_wow_pct')}.`,\n\n    `Revenue per purchase ${movement('revenue_per_purchase_wow_pct')} (${usd('prev_revenue_per_purchase_usd')} to ${usd('revenue_per_purchase_usd')}).`,\n\n    `Conversion rate changed by ${conversionChange > 0 ? '+' : ''}${conversionChange.toFixed(2)} pp to ${num('conversion_rate_pct').toFixed(2)}%.`\n  ].join('\\n\\n');\n}\n\nfunction shortRecommendations() {\n  const recommendations = section(4);\n\n  const titles = [...recommendations.matchAll(\n    /(?:^|\\n)\\s*(?:\\d+[.)]|[-*+])\\s*([^:\\n]{4,90}):/g\n  )]\n    .map(match => match[1].trim())\n    .slice(0, 2);\n\n  if (titles.length !== 2) {\n    throw new Error('Could not extract two investigation titles');\n  }\n\n  return titles\n    .map((title, index) => `${index + 1}. Investigate ${title.toLowerCase()}.`)\n    .join('\\n\\n');\n}\n\n\n// Map all template placeholders.\nconst fields = {\n  REPORTING_WEEK:\n    `${source.week_start} to ${source.week_end}`,\n\n  EXECUTIVE_SUMMARY: section(1),\n\n  USERS: integer('total_users'),\n  USERS_WOW: change('users_wow_pct'),\n\n  PURCHASES: integer('purchases'),\n  PURCHASES_WOW: change('purchases_wow_pct'),\n\n  REVENUE: usd('revenue_usd'),\n  REVENUE_WOW: change('revenue_wow_pct'),\n\n  CONVERSION_RATE:\n    num('conversion_rate_pct').toFixed(2) + '%',\n\n  CONVERSION_CHANGE_PP:\n    change('conversion_change_pp', ' pp'),\n\n  REVENUE_PER_PURCHASE:\n    usd('revenue_per_purchase_usd'),\n\n  RPP_WOW:\n    change('revenue_per_purchase_wow_pct'),\n\n  KEY_FINDINGS: shortFindings(),\n  RECOMMENDATIONS: shortRecommendations()\n};\n\n// Build Google Slides replacement requests.\nconst requests = Object.entries(fields).map(\n  ([name, value]) => ({\n    replaceAllText: {\n      containsText: {\n        text: `{{${name}}}`,\n        matchCase: true\n      },\n      replaceText: String(value)\n    }\n  })\n);\n\nreturn [{\n  json: {\n    presentationId,\n    placeholderCount: requests.length,\n    requests\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -57,7 +59,7 @@
         1104,
         -176
       ],
-      "id": "01173f1d-8acd-4d15-8ee7-399cdf01baa2",
+      "id": "00325cea-4271-4171-8871-4771460a4671",
       "name": "Prepare Presentation Fields"
     },
     {
@@ -65,7 +67,7 @@
         "method": "POST",
         "url": "={{ 'https://slides.googleapis.com/v1/presentations/' + $json.presentationId + ':batchUpdate' }}",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "[REDACTED]",
+        "nodeCredentialType": "googleDriveOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ requests: $json.requests }) }}\n",
@@ -77,7 +79,7 @@
         1328,
         -176
       ],
-      "id": "b44b06ca-0fdc-4be5-a7a8-0dec01feeb8c",
+      "id": "7beff26c-af81-4e81-8981-a881ce28ab81",
       "name": "Fill Presentation Placeholders"
     },
     {
@@ -85,7 +87,7 @@
         "operation": "download",
         "fileId": {
           "__rl": true,
-          "value": "={{ $json.presentationId }}\n",
+          "value": "REPLACE_WITH_GOOGLE_DRIVE_FILE_ID",
           "mode": "id"
         },
         "options": {
@@ -102,7 +104,7 @@
         -16,
         240
       ],
-      "id": "e23270b5-2746-4796-9a9a-8569be522b00",
+      "id": "acdb0105-c8ab-49ab-8eab-cfab6a15ccab",
       "name": "Export PowerPoint",
       "disabled": true
     },
@@ -111,19 +113,19 @@
         "assignments": {
           "assignments": [
             {
-              "id": "53dae82d-c65c-4519-9411-a8d51de4ae4e",
+              "id": "e229b49a-a0ad-4fad-86ad-a5ad80faa4ad",
               "name": "presentation_url",
               "value": "={{ 'https://docs.google.com/presentation/d/' + $json.presentationId + '/edit' }}",
               "type": "string"
             },
             {
-              "id": "fdf0920e-0cb4-4e28-ba08-3ca942324fea",
+              "id": "9e270af7-28d4-49d4-82d4-23d4a69b24d4",
               "name": "status",
               "value": "success",
               "type": "string"
             },
             {
-              "id": "161a73ec-5719-41a3-9169-e4d14e0002e4",
+              "id": "9e2f59bc-a15f-405f-8b5f-9a5f4df89d5f",
               "name": "message",
               "value": "Presentation generated successfully.",
               "type": "string"
@@ -138,12 +140,20 @@
         1776,
         -176
       ],
-      "id": "46e63924-56b8-4bce-91af-ea4a7d1e4ea2",
+      "id": "86ff221f-c36d-446d-8d6d-be6d06c3bf6d",
       "name": "Return Presentation Link"
     },
     {
       "parameters": {
-        "inputSource": "passthrough"
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "week_start",
+              "type": "string"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
@@ -151,7 +161,7 @@
         -16,
         -176
       ],
-      "id": "012c78dc-3aa1-4af8-aa82-80a7a6e3ffce",
+      "id": "77ef7e0e-dbb5-4ab5-89b5-d8b5f836d7b5",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -168,7 +178,7 @@
         432,
         -80
       ],
-      "id": "cd06ab8b-dd9a-4a18-901c-4fb2fe2799dc",
+      "id": "d36d7cfa-731a-421a-891a-781a3ada771a",
       "name": "Check Existing Presentation"
     },
     {
@@ -182,7 +192,7 @@
           },
           "conditions": [
             {
-              "id": "bbca9bc3-1a2b-4fba-a2b9-cc7d183a624a",
+              "id": "380472fd-904c-414c-864c-974c59cd944c",
               "leftValue": "={{ $json.needs_generation }}",
               "rightValue": "",
               "operator": {
@@ -202,7 +212,7 @@
         656,
         -80
       ],
-      "id": "cf31a79f-024f-4e87-8dd4-c93384e32ad7",
+      "id": "28fb63a0-f78e-468e-898e-f88e75d4fb8e",
       "name": "Presentation Needs Generation?"
     },
     {
@@ -210,19 +220,19 @@
         "assignments": {
           "assignments": [
             {
-              "id": "dc372d47-e65f-4b47-b111-02f6ae6c62e7",
+              "id": "d04d2805-0713-4813-8d13-0e1369150b13",
               "name": "presentation_url",
               "value": "={{ 'https://docs.google.com/presentation/d/' + $json.existing_presentation_id + '/edit' }}",
               "type": "string"
             },
             {
-              "id": "9f91f9c3-d3ff-424f-af7a-839851cacc15",
+              "id": "0c4fc510-0f18-4e17-8118-101802441318",
               "name": "status",
               "value": "success",
               "type": "string"
             },
             {
-              "id": "0f2f579f-0f85-4cd7-9c4b-acf950fb5223",
+              "id": "0c49094b-7d40-4e40-8f40-8040a5e78140",
               "name": "message",
               "value": "Existing presentation reused.",
               "type": "string"
@@ -237,7 +247,7 @@
         880,
         16
       ],
-      "id": "5a57312b-7a81-4492-ab69-72bd31ec94d3",
+      "id": "cb51c6e1-54c6-45c6-82c6-53c65db950c6",
       "name": "Return Existing Presentation Link"
     },
     {
@@ -245,7 +255,7 @@
         "operation": "executeQuery",
         "query": "\nINSERT INTO public.weekly_presentations (\n    week_start,\n    presentation_id,\n    source_report_generated_at\n)\nVALUES (\n    $1::date,\n    $2::text,\n    $3::timestamptz\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    presentation_id = EXCLUDED.presentation_id,\n    source_report_generated_at =\n        EXCLUDED.source_report_generated_at,\n    updated_at = NOW()\nRETURNING\n    week_start::text AS week_start,\n    presentation_id AS \"presentationId\";\n",
         "options": {
-          "queryReplacement": "={{\n  [\n    $('Get Presentation Data').first().json.week_start,\n    $json.presentationId,\n    $('Get Presentation Data').first().json.generated_at\n  ]\n}}\n"
+          "queryReplacement": "={{\n  [\n    $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.week_start : $('Get Presentation Data').first().json.week_start,\n    $json.presentationId,\n    $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.generated_at : $('Get Presentation Data').first().json.generated_at\n  ]\n}}\n"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -254,8 +264,3777 @@
         1552,
         -176
       ],
-      "id": "446dc9ca-5748-4f2c-a5dc-58efd07782ce",
+      "id": "d181a127-70ee-41ee-8aee-6beebb8b6cee",
       "name": "Save Presentation Record"
+    },
+    {
+      "id": "a6daefc4-11ee-40ee-8bee-0aeea6400dee",
+      "name": "Weekly Report Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        320,
+        -240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.week_start || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fb33ce2f-be88-4f88-8888-b9889f13ba88",
+      "name": "Return Missing Report",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        -240
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "name": "status",
+              "type": "string",
+              "value": "not_found"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "={{ $('Get Presentation Data').first().json.requested_week ? 'No weekly insights report or KPI comparison found for week starting ' + $('Get Presentation Data').first().json.requested_week + '.' : 'No complete weekly insights report or KPI comparison found.' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "de9f7f35-b227-4327-8827-b927d645b627",
+      "name": "Generate Missing Weekly Insights",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        -400
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "mode": "list"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "week_start": "={{ $json.requested_week || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "week_start",
+              "displayName": "week_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "ce26b782-f4a5-43a5-8aa5-f9a578a2f8a5",
+      "name": "Reload Presentation Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        -400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT d.*, $1::text AS requested_week\nFROM (SELECT 1) AS input\nLEFT JOIN LATERAL (\n  SELECT week_start::text AS week_start, week_end::text AS week_end,\n         report_markdown, metrics_snapshot, model_name, generated_at::text AS generated_at\n  FROM public.weekly_insights\n  WHERE week_end - week_start = 6\n    AND (NULLIF($1::text, '') IS NULL OR week_start = NULLIF($1::text, '')::date)\n  ORDER BY week_start DESC\n  LIMIT 1\n) AS d ON true;",
+        "options": {
+          "queryReplacement": "={{ [ $('Get Presentation Data').first().json.requested_week || '' ] }}"
+        }
+      }
+    },
+    {
+      "id": "ff3068ec-2a6b-496b-846b-236b68a8266b",
+      "name": "Reloaded Weekly Report Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        -400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "31172a5f-0bb7-4cb7-85b7-06b7b28307b7",
+              "leftValue": "={{ $json.week_start || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "04950cd4-8f3d-4e3d-893d-883dcd108b3d",
+      "name": "Step 30 Log Presentation 01 trigger/start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        -400
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "trigger/start",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 0,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "369d23c4-fd5e-4c5e-875d-f65dfa40f95d",
+      "name": "Step 30 Log Presentation 02 trigger/start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        -270
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "trigger/start",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 0,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "1a91ff55-da8b-4b8b-808b-e18bd8e5de8b",
+      "name": "Step 30 Log Presentation 03 primary report fetch",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        -140
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "primary report fetch",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 1,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "5745209f-886b-496b-826b-836b6943846b",
+      "name": "Step 30 Log Presentation 04 weekly report availability gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        -10
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "weekly report availability gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Get Presentation Data\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "ea915ae7-aa68-4b68-8468-a56834cba668",
+      "name": "Step 30 Log Presentation 05 weekly report availability gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        120
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "weekly report availability gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Get Presentation Data\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "c24e9de7-def6-4ff6-88f6-d9f6afcbdaf6",
+      "name": "Step 30 Log Presentation 06 missing insights generation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        250
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "missing insights generation",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Weekly Report Found?\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "515ffe79-964a-474a-844a-954a6491924a",
+      "name": "Step 30 Log Presentation 07 reload and availability check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        380
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "reload and availability check",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Reload Presentation Data\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "8fc2656d-d79e-489e-8d9e-de9e8e7ddb9e",
+      "name": "Step 30 Log Presentation 08 reload and availability check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        510
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "reload and availability check",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Reload Presentation Data\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "ac5b2102-e56b-446b-8b6b-ea6bbe22e96b",
+      "name": "Step 30 Log Presentation 09 presentation existence check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        640
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "presentation existence check",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Check Existing Presentation\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "0b5b92ef-dc1c-4d1c-861c-d71c9b53d81c",
+      "name": "Step 30 Log Presentation 10 presentation existence check",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        770
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "presentation existence check",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Check Existing Presentation\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "c07ea978-075e-465e-895e-085ea6ac0b5e",
+      "name": "Step 30 Log Presentation 11 document generation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        900
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "document generation",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Copy Presentation Template\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "08f22b92-cf88-4e88-8588-d4887cb2d388",
+      "name": "Step 30 Log Presentation 12 external persistence/export",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        1030
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "external persistence/export",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Fill Presentation Placeholders\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ \"exec:\" + $execution.id + ($json.presentationId ? \"|output:\" + $json.presentationId : \"\") }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "b9713d51-0b9d-4c9d-899d-0a9debe9079d",
+      "name": "Step 30 Log Presentation 13 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        1160
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Save Presentation Record\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ \"exec:\" + $execution.id + ($json.presentationId ? \"|output:\" + $json.presentationId : \"\") }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "ac961df4-1b78-4a78-8578-147814301778",
+      "name": "Step 30 Log Presentation 14 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        1290
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Check Existing Presentation\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ \"exec:\" + $execution.id + ($json.presentationId ? \"|output:\" + $json.presentationId : \"\") }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "9a4af758-55a6-44a6-87a6-56a6568c59a6",
+      "name": "Step 30 Log Presentation 15 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2150,
+        1420
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Presentation Data\").all().map(i => { const j = i.json; const a = j.week_start || j.requested_week || \"\"; return a ? a + (j.week_end ? \" to \" + j.week_end : \"\") : \"\"; }).filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Reloaded Weekly Report Found?\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "Google Drive copy + PostgreSQL presentation record",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
     }
   ],
   "connections": {
@@ -266,15 +4045,9 @@
             "node": "Get Presentation Data",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Presentation Data": {
-      "main": [
-        [
+          },
           {
-            "node": "Check Existing Presentation",
+            "node": "Step 30 Log Presentation 01 trigger/start",
             "type": "main",
             "index": 0
           }
@@ -310,6 +4083,11 @@
             "node": "Save Presentation Record",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 11 document generation",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -319,6 +4097,11 @@
         [
           {
             "node": "Get Presentation Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 02 trigger/start",
             "type": "main",
             "index": 0
           }
@@ -343,11 +4126,21 @@
             "node": "Copy Presentation Template",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 09 presentation existence check",
+            "type": "main",
+            "index": 0
           }
         ],
         [
           {
             "node": "Return Existing Presentation Link",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 10 presentation existence check",
             "type": "main",
             "index": 0
           }
@@ -361,23 +4154,152 @@
             "node": "Return Presentation Link",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 12 external persistence/export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Presentation Data": {
+      "main": [
+        [
+          {
+            "node": "Weekly Report Found?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 03 primary report fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Report Found?": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Presentation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 04 weekly report availability gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Missing Weekly Insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 05 weekly report availability gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Missing Weekly Insights": {
+      "main": [
+        [
+          {
+            "node": "Reload Presentation Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 06 missing insights generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reload Presentation Data": {
+      "main": [
+        [
+          {
+            "node": "Reloaded Weekly Report Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reloaded Weekly Report Found?": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Presentation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 07 reload and availability check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Missing Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Presentation 08 reload and availability check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Presentation Link": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 13 final return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Existing Presentation Link": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 14 final return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Missing Report": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 15 final return",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
-  },
-  "versionId": "2b87cfcb-7db9-4f2b-ade0-d60e1746140d",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "04255b42a91f8a0a7b14051df41a71c1fb90b851d24df88e29c646bb7a24ee3f"
-  },
-  "nodeGroups": [],
-  "id": "f8e68w9otsrw1xd8",
-  "tags": []
+  }
 }

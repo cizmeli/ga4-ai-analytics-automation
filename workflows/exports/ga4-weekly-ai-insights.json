@@ -7,36 +7,41 @@
       "typeVersion": 1,
       "position": [
         -32,
-        0
+        160
       ],
+      "id": "700ff19d-053b-463b-8b3b-0c3b51ed093b",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nWITH weekly AS (\n    SELECT\n        week_start,\n        week_end,\n        total_users,\n        purchases,\n        purchase_users,\n        revenue_usd,\n\n        100.0 * purchase_users /\n            NULLIF(total_users, 0)\n            AS conversion_rate_pct,\n\n        revenue_usd /\n            NULLIF(purchases, 0)\n            AS revenue_per_purchase_usd\n\n    FROM public.weekly_kpis\n    WHERE week_end - week_start = 6\n),\n\ncomparison AS (\n    SELECT\n        *,\n\n        LAG(week_start) OVER w AS prev_week_start,\n        LAG(week_end) OVER w AS prev_week_end,\n        LAG(total_users) OVER w AS prev_users,\n        LAG(purchases) OVER w AS prev_purchases,\n        LAG(revenue_usd) OVER w AS prev_revenue,\n\n        LAG(conversion_rate_pct) OVER w\n            AS prev_conversion_rate,\n\n        LAG(revenue_per_purchase_usd) OVER w\n            AS prev_revenue_per_purchase\n\n    FROM weekly\n    WINDOW w AS (ORDER BY week_start)\n)\n\nSELECT\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n\n    total_users,\n    purchases,\n    revenue_usd,\n\n    ROUND(conversion_rate_pct, 2)\n        AS conversion_rate_pct,\n\n    ROUND(revenue_per_purchase_usd, 2)\n        AS revenue_per_purchase_usd,\n\n    prev_week_start::text AS prev_week_start,\n    prev_week_end::text AS prev_week_end,\n    prev_users,\n    prev_purchases,\n    prev_revenue,\n\n    ROUND(prev_conversion_rate, 2)\n        AS prev_conversion_rate,\n\n    ROUND(prev_revenue_per_purchase, 2)\n        AS prev_revenue_per_purchase_usd,\n\n    ROUND(\n        100.0 * (total_users - prev_users) /\n        NULLIF(prev_users, 0), 2\n    ) AS users_wow_pct,\n\n    ROUND(\n        100.0 * (purchases - prev_purchases) /\n        NULLIF(prev_purchases, 0), 2\n    ) AS purchases_wow_pct,\n\n    ROUND(\n        100.0 * (revenue_usd - prev_revenue) /\n        NULLIF(prev_revenue, 0), 2\n    ) AS revenue_wow_pct,\n\n    ROUND(\n        conversion_rate_pct - prev_conversion_rate,\n        2\n    ) AS conversion_change_pp,\n\n    ROUND(\n        100.0 * (\n            revenue_per_purchase_usd -\n            prev_revenue_per_purchase\n        ) /\n        NULLIF(prev_revenue_per_purchase, 0),\n        2\n    ) AS revenue_per_purchase_wow_pct\n\nFROM comparison\nWHERE prev_week_end = week_start - 1\nORDER BY week_start DESC\nLIMIT 1;\n",
-        "options": {}
+        "query": "WITH weekly AS (\n    SELECT week_start, week_end, total_users, purchases, purchase_users, revenue_usd,\n           100.0 * purchase_users / NULLIF(total_users, 0) AS conversion_rate_pct,\n           revenue_usd / NULLIF(purchases, 0) AS revenue_per_purchase_usd\n    FROM public.weekly_kpis\n    WHERE week_end - week_start = 6\n),\ncomparison AS (\n    SELECT *,\n           LAG(week_start) OVER w AS prev_week_start,\n           LAG(week_end) OVER w AS prev_week_end,\n           LAG(total_users) OVER w AS prev_users,\n           LAG(purchases) OVER w AS prev_purchases,\n           LAG(revenue_usd) OVER w AS prev_revenue,\n           LAG(conversion_rate_pct) OVER w AS prev_conversion_rate,\n           LAG(revenue_per_purchase_usd) OVER w AS prev_revenue_per_purchase\n    FROM weekly WINDOW w AS (ORDER BY week_start)\n),\nselected AS (\n    SELECT week_start::text AS week_start, week_end::text AS week_end,\n           total_users, purchases, revenue_usd,\n           ROUND(conversion_rate_pct, 2) AS conversion_rate_pct,\n           ROUND(revenue_per_purchase_usd, 2) AS revenue_per_purchase_usd,\n           prev_week_start::text AS prev_week_start,\n           prev_week_end::text AS prev_week_end,\n           prev_users, prev_purchases, prev_revenue,\n           ROUND(prev_conversion_rate, 2) AS prev_conversion_rate,\n           ROUND(prev_revenue_per_purchase, 2) AS prev_revenue_per_purchase_usd,\n           ROUND(100.0 * (total_users - prev_users) / NULLIF(prev_users, 0), 2) AS users_wow_pct,\n           ROUND(100.0 * (purchases - prev_purchases) / NULLIF(prev_purchases, 0), 2) AS purchases_wow_pct,\n           ROUND(100.0 * (revenue_usd - prev_revenue) / NULLIF(prev_revenue, 0), 2) AS revenue_wow_pct,\n           ROUND(conversion_rate_pct - prev_conversion_rate, 2) AS conversion_change_pp,\n           ROUND(100.0 * (revenue_per_purchase_usd - prev_revenue_per_purchase)\n                / NULLIF(prev_revenue_per_purchase, 0), 2) AS revenue_per_purchase_wow_pct\n    FROM comparison\n    WHERE prev_week_end = week_start - 1\n      AND ($1::date IS NULL OR week_start = $1::date)\n    ORDER BY week_start DESC LIMIT 1\n)\nSELECT selected.*, $1::date::text AS requested_week,\n       -- Increment this version whenever the Generate Weekly Insights prompt changes.\n       'weekly-insights-v4'::text AS prompt_version\nFROM (SELECT 1) AS input\nLEFT JOIN selected ON true;",
+        "options": {
+          "queryReplacement": "={{ [ $json.week_start || null ] }}"
+        }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
         192,
-        96
+        256
       ],
+      "id": "75761a91-358d-468d-838d-348df4a9318d",
       "name": "Get Weekly Comparison"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=\nYou are a Senior E-commerce Data Analyst preparing a weekly executive performance report.\n\nAnalyze ONLY the SQL data provided below.\n\nWEEKLY DATA:\n{{ JSON.stringify($('Get Weekly Comparison').first().json) }}\n\nREPORT STRUCTURE\n\n## 1. Executive Summary\nSummarize overall performance in 2-3 sentences.\nIdentify the most significant movement and its business relevance.\n\n## 2. KPI Performance\nReport the current values and week-over-week changes for:\n- Total Users (%)\n- Purchases (%)\n- Revenue in USD (%)\n- Purchase Conversion Rate (percentage points)\n- Revenue per Purchase in USD (%)\n\n## 3. Key Findings\nIdentify 2-3 meaningful analytical observations.\n\nPay particular attention to:\n- Whether revenue and purchase volume moved proportionally.\n- Whether changes in Revenue per Purchase help explain the mathematical revenue movement.\n- Whether conversion rate remained stable or changed materially.\n\nRevenue = Purchases × Revenue per Purchase.\n\nUse this relationship to explain the numerical components of revenue changes.\n\n## 4. Recommended Investigations\nRecommend 1-2 specific follow-up analyses that would help explain the observations.\n\nANALYTICAL RULES\n- Write the entire report in English.\n- Use only the supplied SQL results.\n- Never invent numbers, dates, or missing metrics.\n- Distinguish observed relationships from causal explanations.\n- Do not attribute changes to pricing, discounts, product mix, customer behavior, or external factors without supporting data.\n- Treat Revenue per Purchase as a descriptive metric, not a validated Average Order Value.\n- Use percentage points for conversion rate changes.\n- Clearly identify the current and previous reporting weeks.\n- Explain that the dataset is historical and anonymized.\n- Do not describe the results as live business performance.\n- If data is insufficient, clearly identify the limitation.\n- Keep the report professional and under 300 words.\n- Use Markdown headings and concise business language.\n\n- When explaining revenue changes, distinguish\n  arithmetic decomposition from business causality.\n- Use \"mathematically accounted for by\" instead\n  of \"caused by\" when discussing purchase volume\n  and revenue per purchase.\n- Do not claim that stable conversion rates prove\n  stable customer behavior.\n",
+        "text": "=You are a Senior E-commerce Data Analyst preparing a data-driven weekly executive performance report.\n\nYour objective is to explain observed business performance accurately, identify meaningful numerical relationships, and recommend relevant follow-up investigations.\n\nUse ONLY the SQL data provided below. Do not assume access to additional metrics or dimensions.\n\nWEEKLY DATA:\n{{ JSON.stringify($('Get Weekly Comparison').first().json) }}\n\n# REPORT STRUCTURE\n\n## 1. Executive Summary\n\n- Summarize overall performance in 2–3 sentences.\n- Identify the most significant quantified movement.\n- State its business relevance as an observation. In sections 1–3, never say that one metric caused, drove, explained, or otherwise produced a change in another metric. Do not say changes in users or traffic explain changes in purchases or revenue.\n- Clearly identify the current and previous reporting weeks.\n\n## 2. KPI Performance\n\nReport the current value and week-over-week change for:\n\n- Total Users (percentage change)\n- Purchases (percentage change)\n- Revenue in USD (percentage change)\n- Purchase Conversion Rate (percentage-point change)\n- Revenue per Purchase in USD (percentage change)\n\nReport every listed KPI using its SQL-provided current value and change; do not omit a KPI or substitute an assumed value.\n\nPreserve the correct signs, units, and reporting periods.\n\nDo not calculate missing values from assumptions.\n\n## 3. Key Findings\n\nProvide exactly 2 or 3 Key Findings bullets supported directly by the data; never provide 4 or more, and do not use nested bullets. Combine the Revenue per Purchase direction with the arithmetic revenue decomposition in the same bullet. Count the Key Findings bullets before finalizing.\n\nFocus on:\n\n- Describe how Revenue, Purchases, and Revenue per Purchase changed relative to one another, including whether Revenue per Purchase increased or decreased; state the revenue relationship as arithmetic using “mathematically accounted for by,” never as causality.\n- Report whether Purchase Conversion Rate increased, decreased, or remained relatively stable.\n- Report meaningful differences between user growth and purchase-event growth as observations only; do not explain them with user or traffic changes.\n\nUse the following mathematical identity:\n\nRevenue = Purchases × Revenue per Purchase\n\nImportant:\n\n- This is arithmetic only. Phrase the relationship as “revenue was mathematically accounted for by the combined movements in Purchases and Revenue per Purchase”; do not describe this as causation.\n- The percentage changes interact multiplicatively; do not simply add them and claim an exact decomposition.\n- Use “Revenue per Purchase” as the exact label for this metric everywhere, including recommendations. Never label it “revenue per transaction,” “average value per transaction,” “average transaction,” “average order value,” or “AOV.”\n- Minor discrepancies may arise from rounding.\n\n## 4. Recommended Investigations\n\nRecommend 1–2 specific follow-up questions that could investigate possible explanations for the observations.\n\nFor each recommendation:\n\n- Frame each hypothesis only as a question to investigate, never as a finding.\n- Name the specific additional data fields needed and explain how they could answer the question.\n- Request fields that can answer the question; source/medium cannot establish demographic differences, which require demographic fields.\n- For any category-level Revenue per Purchase analysis, require both category-level revenue and category-level purchase-event counts; do not recommend calculating or comparing it unless both fields are available.\n- Do not assume any fields or dimensions exist; ask whether the needed data is available.\n\n# METRIC INTERPRETATION RULES\n\n- Total Users represents distinct users within each reporting week.\n- Purchases represents the number of purchase events.\n- Purchase Users represents distinct users who made at least one purchase.\n- Purchase Conversion Rate = Purchase Users / Total Users × 100.\n- Revenue per Purchase = Revenue / Purchases.\n\nDo not confuse purchase events with purchasing users.\n\nDo not infer Purchase Users growth, purchase frequency, or changes in purchasing behavior when those metrics are not provided.\n\nA decline in Purchase Conversion Rate does not necessarily imply a decline in purchase-event volume.\n\nDo not use purchase-event growth as direct evidence of conversion efficiency.\n\nDo not claim that revenue changes were caused by changes in Total Users based only on weekly aggregate metrics.\n\n# ANALYTICAL ACCURACY RULES\n\n1. Use only the supplied SQL results.\n2. Never invent metrics, dates, values, calculations, segments, or business events.\n3. Before wording any comparison, check the signs of the SQL-provided changes: two nonzero changes with the same sign moved in the same direction; one positive and one negative moved in opposite directions. A zero change is unchanged; state the direction of any nonzero change accurately. Then verify the narrative against the SQL-provided signs and values.\n4. Do not make contradictory statements about metric direction or relative growth.\n5. In sections 1–3, present only arithmetic relationships and direct observations; state no causal relationship between metrics. Do not use “reflects” to imply that one metric explains or causes another.\n6. Use “mathematically accounted for by” only to describe the arithmetic revenue relationship, never as a causal explanation.\n7. Do not attribute performance changes to pricing, discounts, marketing campaigns, product mix, customer behavior, or external factors without supporting evidence.\n8. Do not claim that a stable conversion rate proves stable customer behavior.\n9. Do not describe a metric as stable or material without considering the magnitude of its observed change.\n10. Never treat missing values as zero.\n11. If a previous-week value is zero or unavailable, do not invent a percentage change.\n12. Use percentage points (pp) for absolute conversion rate differences.\n13. Respect the distinction between rounded displayed metrics and underlying precision.\n14. Clearly distinguish current and previous reporting periods.\n15. Do not claim knowledge of individual customer journeys or transaction characteristics from weekly aggregates.\n\n# DATA CONTEXT\n\n- This is historical, anonymized GA4 e-commerce sample data.\n- The dataset does not represent live business performance.\n- Reporting weeks begin on Sunday and end on Saturday.\n- Use complete reporting weeks for standard comparisons.\n- If the supplied data is insufficient to support a conclusion, state the limitation.\n\n# OUTPUT REQUIREMENTS\n\n- Write the entire report in English.\n- Use exactly the four report sections defined above.\n- Use Markdown headings and concise bullet points.\n- Present metrics with appropriate units and signs.\n- Express revenue in USD.\n- Keep the complete report under 300 words.\n- Avoid repeating the same observation across sections.\n- Make recommendations specific, realistic, and data-driven.\n- End the report with this exact final line after section 4, without adding a fifth section: “Disclaimer: This report uses historical, anonymized GA4 sample data and does not represent live business performance.”\n- Do not expose internal tool names, SQL queries, or workflow implementation details.\n\nFinal check: Remove all causal claims from sections 1–3, including any causal use of “reflects,” and remove repeated findings across sections. Count the Key Findings bullets and ensure there are exactly 2 or 3. Use “Revenue per Purchase” as the metric name and no prohibited alternative label. Ensure every hypothesis appears only as a follow-up question with data fields capable of answering it named, without assuming those fields exist. Then check that all reported figures, growth directions, numerical comparisons, and interpretations are internally consistent against SQL signs, and confirm that the exact disclaimer is the final line.\n\nProduce only the final executive report.",
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        624,
-        96
+        864,
+        0
       ],
+      "id": "53b0d133-bb47-4c47-8d47-be4799cfbf47",
       "name": "Generate Weekly Insights"
     },
     {
@@ -51,15 +56,16 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        496,
-        320
+        944,
+        224
       ],
+      "id": "c34f9f93-cf22-4022-8122-d222fe2fd322",
       "name": "OpenRouter Chat Model"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nINSERT INTO public.weekly_insights (\n    week_start,\n    week_end,\n    report_markdown,\n    metrics_snapshot,\n    model_name,\n    generated_at\n)\nVALUES (\n    $1::date,\n    $2::date,\n    $3::text,\n    $4::jsonb,\n    $5::text,\n    NOW()\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    week_end = EXCLUDED.week_end,\n    report_markdown = EXCLUDED.report_markdown,\n    metrics_snapshot = EXCLUDED.metrics_snapshot,\n    model_name = EXCLUDED.model_name,\n    generated_at = NOW()\nRETURNING\n    week_start,\n    week_end,\n    model_name,\n    generated_at;\n",
+        "query": "\nINSERT INTO public.weekly_insights (\n    week_start,\n    week_end,\n    report_markdown,\n    metrics_snapshot,\n    model_name,\n    generated_at\n)\nVALUES (\n    $1::date,\n    $2::date,\n    $3::text,\n    $4::jsonb,\n    $5::text,\n    NOW()\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    week_end = EXCLUDED.week_end,\n    report_markdown = EXCLUDED.report_markdown,\n    metrics_snapshot = EXCLUDED.metrics_snapshot,\n    model_name = EXCLUDED.model_name,\n    generated_at = NOW()\nRETURNING\n    week_start::text AS week_start,\n    week_end::text AS week_end,\n    report_markdown,\n    model_name,\n    generated_at;\n",
         "options": {
           "queryReplacement": "=\n{{\n  [\n    $('Get Weekly Comparison').first().json.week_start,\n    $('Get Weekly Comparison').first().json.week_end,\n    $json.text,\n    JSON.stringify(\n      $('Get Weekly Comparison').first().json\n    ),\n    'google/gemini-3.1-flash-lite'\n  ]\n}}\n"
         }
@@ -67,27 +73,35 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        976,
-        96
+        1216,
+        112
       ],
+      "id": "6186efc7-a872-4972-8272-a37270aba472",
       "name": "Save Weekly Insights"
     },
     {
       "parameters": {
-        "inputSource": "passthrough"
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "week_start"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
       "position": [
         -32,
-        192
+        352
       ],
+      "id": "ac83f903-fb19-4c19-8d19-fe19dedfff19",
       "name": "When Executed by Another Workflow"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "\nSELECT TRUE AS should_generate\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM public.weekly_insights\n    WHERE week_start = $1::date\n      AND metrics_snapshot = $2::jsonb\n);\n",
+        "query": "SELECT\n    ($1::date)::text AS week_start,\n    i.report_markdown,\n    i.generated_at,\n    (i.week_start IS NULL) AS should_generate\nFROM (SELECT 1) AS base\nLEFT JOIN public.weekly_insights i\n    ON i.week_start = $1::date\n   AND (i.metrics_snapshot - 'requested_week')\n       = ($2::jsonb - 'requested_week');\n",
         "options": {
           "queryReplacement": "=\n{{\n  [\n    $json.week_start,\n    JSON.stringify($json)\n  ]\n}}\n"
         }
@@ -95,10 +109,3083 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        400,
-        96
+        416,
+        256
       ],
+      "id": "0580014f-af06-4006-8906-aa069fb3ab06",
       "name": "Check Report Needs Generation"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8a4d5764-afde-4ede-89de-a8de67e0abde",
+              "leftValue": "={{ $json.should_generate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        256
+      ],
+      "id": "5dcddd17-e942-4a42-8342-e4424b3be542",
+      "name": "Needs AI Generation?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ce7a867f-ab00-4c00-8500-a600bca3a700",
+              "name": "week_start",
+              "value": "={{ $json.week_start }}",
+              "type": "string"
+            },
+            {
+              "id": "927c66a2-aee2-4de2-84e2-b3e220c2b2e2",
+              "name": "report_markdown",
+              "value": "={{ $json.report_markdown }}",
+              "type": "string"
+            },
+            {
+              "id": "927ea539-34d3-45d3-82d3-33d37fd130d3",
+              "name": "generated_at",
+              "value": "={{ $json.generated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "ce814244-3d77-4c77-8777-36777cc03977",
+              "name": "status",
+              "value": "cached",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        400
+      ],
+      "id": "fffdd2d4-2793-4693-8193-209303102393",
+      "name": "Return Saved Insights"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2d40c01a-7f9c-4e9c-859c-849c387a839c",
+              "name": "week_start",
+              "value": "={{ $json.week_start }}",
+              "type": "string"
+            },
+            {
+              "id": "e93e1677-07c3-48c3-81c3-02c35e1b03c3",
+              "name": "report_markdown",
+              "value": "={{ $json.report_markdown }}",
+              "type": "string"
+            },
+            {
+              "id": "e946653c-804e-4f4e-8a4e-794e05787c4e",
+              "name": "generated_at",
+              "value": "={{ $json.generated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "2d42feb1-04ef-45ef-82ef-03efc6c900ef",
+              "name": "status",
+              "value": "generated",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1440,
+        112
+      ],
+      "id": "3fdb6f35-041d-451d-8a1d-0b1d4645081d",
+      "name": "Return Generated Insights"
+    },
+    {
+      "id": "a4446bea-46ff-45ff-8cff-4bff6d0a4aff",
+      "name": "Weekly KPI Comparison Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        256
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3b9711d8-f77e-467e-897e-f87e350cfb7e",
+              "leftValue": "={{ $json.week_start || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "5396a6bc-dd6f-4c6f-876f-d66fe2f8d96f",
+      "name": "Return Missing KPI",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        432
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8cc7a60d-a170-4270-8770-a870859da570",
+              "name": "status",
+              "type": "string",
+              "value": "not_found"
+            },
+            {
+              "id": "88c9de58-6fc9-4ec9-81c9-70c9158c73c9",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.requested_week ? 'No complete weekly KPI comparison found for week starting ' + $json.requested_week + '.' : 'No complete weekly KPI comparison is available.' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "0112a28d-0987-4a87-8f87-1087161d0d87",
+      "name": "Step 30 Log Insights 01 trigger/start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "trigger/start",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 0,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "a42eb607-803e-413e-8a3e-7b3e0a6b7c3e",
+      "name": "Step 30 Log Insights 02 trigger/start",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        130
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "",
+            "promptVersion": "",
+            "workflowVersion": "",
+            "model": "",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "trigger/start",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 0,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "27c145ff-7f48-4048-8948-7a4848237b48",
+      "name": "Step 30 Log Insights 03 primary KPI comparison fetch",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        260
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "primary KPI comparison fetch",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": 1,
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [ { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"total_users\", currentValue: $json.total_users, priorValue: $json.prev_users, change: $json.users_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"purchases\", currentValue: $json.purchases, priorValue: $json.prev_purchases, change: $json.purchases_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"revenue_usd\", currentValue: $json.revenue_usd, priorValue: $json.prev_revenue, change: $json.revenue_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"conversion_rate_pct\", currentValue: $json.conversion_rate_pct, priorValue: $json.prev_conversion_rate, change: $json.conversion_change_pp, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"revenue_per_purchase_usd\", currentValue: $json.revenue_per_purchase_usd, priorValue: $json.prev_revenue_per_purchase_usd, change: $json.revenue_per_purchase_wow_pct, source: \"Get Weekly Comparison\" } ].filter(k => k.period && k.currentValue !== undefined && k.currentValue !== null) }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "3749f0da-601b-4f1b-861b-651bedba641b",
+      "name": "Step 30 Log Insights 04 weekly comparison availability gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        390
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "weekly comparison availability gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Get Weekly Comparison\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "960e7378-b99c-489c-8b9c-ba9c80acbd9c",
+      "name": "Step 30 Log Insights 05 weekly comparison availability gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        520
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "weekly comparison availability gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Get Weekly Comparison\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "9906d0bf-2e6e-4f6e-886e-296e7a632a6e",
+      "name": "Step 30 Log Insights 06 report freshness/generation gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        650
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "report freshness/generation gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Check Report Needs Generation\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "aed21c39-87c5-48c5-85c5-86c54ed183c5",
+      "name": "Step 30 Log Insights 07 report freshness/generation gate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        780
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "report freshness/generation gate",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Check Report Needs Generation\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "b8143543-ee79-4f79-8079-f179de9ff279",
+      "name": "Step 30 Log Insights 08 AI model generation",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        910
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "AI model generation",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Needs AI Generation?\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "84b5e58b-7b5c-4c5c-8d5c-7e5cb2a77f5c",
+      "name": "Step 30 Log Insights 09 insights persistence",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        1040
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "running",
+            "stage": "insights persistence",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Generate Weekly Insights\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "2b3c915c-382b-472b-822b-312b9418342b",
+      "name": "Step 30 Log Insights 10 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        1170
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Save Weekly Insights\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "3d14ef6a-5a30-4930-8030-5f305c8a5e30",
+      "name": "Step 30 Log Insights 11 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        1300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Needs AI Generation?\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
+    },
+    {
+      "id": "5d81f9b0-b264-4164-8464-b364d8e4b664",
+      "name": "Step 30 Log Insights 12 final return",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        1430
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+        },
+        "mode": "once",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflowId": "={{ $workflow.id }}",
+            "workflowName": "={{ $workflow.name }}",
+            "executionId": "={{ $execution.id }}",
+            "mode": "={{ $execution.mode }}",
+            "runTime": "={{ $now.toUTC().toISO() }}",
+            "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
+            "promptVersion": "weekly-insights-v4",
+            "workflowVersion": "",
+            "model": "google/gemini-3.1-flash-lite",
+            "cache": "",
+            "runStatus": "succeeded",
+            "stage": "final return",
+            "stageTime": "={{ $now.toUTC().toISO() }}",
+            "duration": "",
+            "stageStatus": "succeeded",
+            "inputCount": "={{ $(\"Weekly KPI Comparison Found?\").all().length }}",
+            "outputCount": "={{ $input.all().length }}",
+            "errorSummary": "",
+            "saveMode": "PostgreSQL insights upsert",
+            "sourceReport": "={{ 'exec:' + $execution.id }}",
+            "kpis": "={{ [] }}"
+          },
+          "schema": [
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runTime",
+              "displayName": "runTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dateRange",
+              "displayName": "dateRange",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "promptVersion",
+              "displayName": "promptVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "workflowVersion",
+              "displayName": "workflowVersion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "model",
+              "displayName": "model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "cache",
+              "displayName": "cache",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "runStatus",
+              "displayName": "runStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stage",
+              "displayName": "stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageTime",
+              "displayName": "stageTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stageStatus",
+              "displayName": "stageStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "inputCount",
+              "displayName": "inputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "outputCount",
+              "displayName": "outputCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "errorSummary",
+              "displayName": "errorSummary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "saveMode",
+              "displayName": "saveMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sourceReport",
+              "displayName": "sourceReport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kpis",
+              "displayName": "kpis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "onError": "stopWorkflow",
+      "retryOnFail": false
     }
   ],
   "connections": {
@@ -109,15 +3196,9 @@
             "node": "Get Weekly Comparison",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Weekly Comparison": {
-      "main": [
-        [
+          },
           {
-            "node": "Check Report Needs Generation",
+            "node": "Step 30 Log Insights 01 trigger/start",
             "type": "main",
             "index": 0
           }
@@ -142,6 +3223,11 @@
             "node": "Save Weekly Insights",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 08 AI model generation",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -153,6 +3239,11 @@
             "node": "Get Weekly Comparison",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 02 trigger/start",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -161,7 +3252,128 @@
       "main": [
         [
           {
+            "node": "Needs AI Generation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs AI Generation?": {
+      "main": [
+        [
+          {
             "node": "Generate Weekly Insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 06 report freshness/generation gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Saved Insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 07 report freshness/generation gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Weekly Insights": {
+      "main": [
+        [
+          {
+            "node": "Return Generated Insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 09 insights persistence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekly Comparison": {
+      "main": [
+        [
+          {
+            "node": "Weekly KPI Comparison Found?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 03 primary KPI comparison fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly KPI Comparison Found?": {
+      "main": [
+        [
+          {
+            "node": "Check Report Needs Generation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 04 weekly comparison availability gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Missing KPI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Step 30 Log Insights 05 weekly comparison availability gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Generated Insights": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Insights 10 final return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Saved Insights": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Insights 11 final return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Missing KPI": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Insights 12 final return",
             "type": "main",
             "index": 0
           }
@@ -171,6 +3383,8 @@
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
   }
 }
