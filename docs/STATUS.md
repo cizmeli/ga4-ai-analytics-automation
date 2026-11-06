@@ -10,7 +10,7 @@ Snapshot: 2026-11-06 (Europe/Berlin). This records the current n8n workflow stat
 - GA4 - Presentation Generator is published and active. Its sanitized export is synchronized in this repository.
 - GA4 Project Log Writer is active with 7 nodes. It sanitizes incoming logging payloads and upserts run, stage, and aggregate KPI summaries to a configured Google Sheets destination. Logger calls in the active Presentation workflow wait for the Log Writer and continue if logging fails. The assistant, insights, presentation, and current ETL graphs have logging calls. Its portable export is intentionally not included in this public repository.
 - GA4 Temporary Read-only Permission Check is inactive and temporary; it is not part of the product workflow exports.
-- The Metabase dashboard is visible at http://localhost:3001. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
+- A local Metabase dashboard is available. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
 
 ## Step 32 evaluation and published v6
 
