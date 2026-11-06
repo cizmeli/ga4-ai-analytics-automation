@@ -17,7 +17,7 @@
 - **Presentation Needs Generation?** — branches on the cache lookup.
 - **Return Existing Presentation Link** — returns a cached deck without copying, filling, or saving another record.
 - **Copy Presentation Template** — copies a Drive template.
-- **Prepare Presentation Fields** — formats report and KPI values; requires the copied file to contain an id.
+- **Prepare Presentation Fields** — formats report and KPI values; requires the copied file to contain an id. It extracts up to two recommendation titles from legacy `Title: details` bullets or preserves two question-style bullets from the report.
 - **Fill Presentation Placeholders** — updates text in Google Slides.
 - **Save Presentation Record** — persists the deck reference after the Slides update succeeds.
 - **Return Presentation Link** — returns the new deck link.
