@@ -19,6 +19,17 @@
 6. Confirm node parameters and expressions against your n8n version. The exports are portable starting points, not turnkey credentials.
 7. Keep the ETL schedule disabled. The historical sample period is already loaded, and the source ETL is inactive. Do not enable a schedule unless the source data and reload plan change.
 
+## Step 30 logging prerequisite
+
+The four included workflow exports contain 35 Step 30 calls to the Project Log Writer helper. Every call uses the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder because the helper workflow export is not included in this public repository. The calls use `stopWorkflow` behavior, so an unresolved helper reference can stop the parent workflow.
+
+Before running an imported workflow, choose one option:
+
+1. Install and configure your own Project Log Writer helper, then select it in every Step 30 node to replace the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder. Configure its spreadsheet destination and credentials in your own n8n instance.
+2. If you do not want logging, disable or remove every Step 30 call in that imported workflow before running it.
+
+Do not leave unresolved helper references in workflows you intend to run. Verify the references in each imported workflow; the helper calls are independent of the assistant's GA4 data tools.
+
 ## Database
 
 sql/schema.sql is an example of the tables used by the assistant and presentation workflows. Inspect existing tables, constraints, and grants before applying DDL. The live database grants and RLS have not been audited in this documentation pass.

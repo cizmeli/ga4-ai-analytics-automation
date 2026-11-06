@@ -7,9 +7,10 @@ This file is the handoff point for future updates to this repository. Refresh it
 - GitHub repository: [cizmeli/ga4-ai-analytics-automation](https://github.com/cizmeli/ga4-ai-analytics-automation)
 - Visibility: public, observed on 2026-11-05. This sync did not change repository visibility.
 - Default branch: main.
-- Base main head before this sync: e485612d3ebc0371d317fa89e9624e0c911443b2.
-- A pre-sync snapshot is preserved on branch backup/pre-sync-2026-11-05.
-- Latest recorded sync: sanitized workflow snapshots, logging documentation, and the Step 32 draft note refreshed on 2026-11-06; see GitHub history for the commit.
+- Base main head before this documentation sync: 69292337f4f2bfefeda29ce5624ddc3f4b14f129.
+- Pre-update snapshot for this sync is preserved on branch backup/pre-doc-review-fixes-2026-11-06.
+- Earlier pre-sync snapshot remains on branch backup/pre-sync-2026-11-05 at e485612d3ebc0371d317fa89e9624e0c911443b2.
+- Latest recorded sync: Step 30 import prerequisites and saved-draft logging cautions refreshed on 2026-11-06; see GitHub history for the commit.
 - Project artifacts and technical documentation are written in English. Conversation with the owner may be in Turkish.
 
 ## Project purpose and architecture
@@ -32,8 +33,8 @@ The data is historical, anonymized sample data, not live business traffic. Repor
 |---|---|---|
 | GA4 Weekly ETL | Inactive; current 10-node configuration has no published active version | Schedule Trigger is deactivated. All available historical data is loaded; no schedule is needed. The current configuration was not runtime-tested in this sync. |
 | GA4 - Weekly AI Insights | Published and active; 24-node published graph | Accepts a selected complete week or defaults to the latest eligible pair; requires a consecutive prior week; unchanged metrics snapshots return the saved report. |
-| GA4 - AI Analytics Assistant | Published and active; 12-node graph | Authenticated chat, read-only KPI tools, on-demand insights, and a presentation tool used only for explicit slide requests. |
-| GA4 - Presentation Generator | Published and active; 32-node graph | Generates or reuses a deck for an eligible requested week; returns not_found if its insight cannot be produced. PowerPoint download is deactivated. |
+| GA4 - AI Analytics Assistant | Published and active; 12-node graph | Authenticated chat, read-only KPI tools, on-demand insights, and explicit-request presentation tool. The current saved draft omits all three Step 30 logging calls in the published graph; reconcile before publishing the draft. |
+| GA4 - Presentation Generator | Published and active; 32-node graph | Generates or reuses a deck for an eligible requested week; returns not_found if its insight cannot be produced. PowerPoint download is deactivated. The 17-node saved draft omits all 15 published Step 30 logging calls; reconcile before publishing. |
 | GA4 Project Log Writer | Active shared helper; 7 nodes | Sanitizes run/stage/KPI summaries and upserts them to configured Google Sheets. This is an external write path. |
 | GA4 Temporary Read-only Permission Check | Inactive temporary workflow | Excluded from product exports. |
 
@@ -74,7 +75,7 @@ All included exports omit n8n credential bindings and live workflow, node, webho
 
 ## Update log
 
-- 2026-11-06 — refreshed published workflow snapshots and current status; documented the active logging helper and kept Step 32 v6 as an unpublished SQL draft. Step 32 evaluation evidence is dated 2026-11-05.
+- 2026-11-06 — documented the Step 30 import requirements for 35 calls across the four included exports and the saved-draft versus published logging gaps for the Assistant and Presentation workflows; Step 32 evaluation evidence remains dated 2026-11-05.
 - 2026-11-04 — documented selected-week on-demand insights and same-week presentation reload behavior.
 - 2026-11-04 — added GitHub-rendered Mermaid workflow diagrams.
 - 2026-11-04 — added the Weekly AI Insights export and related documentation.

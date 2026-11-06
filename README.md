@@ -57,7 +57,8 @@ flowchart LR
 2. Create the required Supabase tables and configure n8n credentials locally.
 3. Import sanitized exports from workflows/exports/ one at a time. Rebind credentials and external asset references.
 4. Use the inactive ETL only in a disposable copy if you need to verify or extend the historical load. Keep its schedule disabled.
-5. Start Metabase with the example Compose file and connect a dedicated read-only PostgreSQL role.
+5. Before running an imported workflow, configure Step 30 logging as described in the [setup guide](docs/SETUP.md#step-30-logging-prerequisite). Select your own Project Log Writer workflow in every Step 30 node to replace the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder, or disable/remove all Step 30 calls. These calls use `stopWorkflow` behavior, so an unresolved helper reference can stop the parent workflow.
+6. Start Metabase with the example Compose file and connect a dedicated read-only PostgreSQL role.
 
 These exports are portable starting points, not turnkey credentials. This repository contains no live credentials or execution payloads.
 

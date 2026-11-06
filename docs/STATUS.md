@@ -26,6 +26,15 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05. It used pin
 
 These are observations from existing history, not new executions from this sync.
 
+## Saved draft and published logging state
+
+Checked against n8n on 2026-11-06:
+
+- The active published 12-node version of `GA4 - AI Analytics Assistant` contains three Step 30 logging calls. Its current saved draft contains none. Keep the published version as the runtime reference; reconcile the logging nodes and connections before publishing the draft.
+- The active published 32-node version of `GA4 - Presentation Generator` contains 15 Step 30 logging calls. Its current saved draft has 17 nodes and contains none. Reconcile the logging nodes and connections before publishing the draft, or its runtime flow would lose those calls.
+
+The active published versions remain the runtime reference.
+
 ## Known gaps
 
 - No sanitized workflow export has been re-imported into a disposable n8n instance during this review.
