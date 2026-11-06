@@ -36,4 +36,5 @@ The export has not been re-imported into a clean n8n instance. Do not describe i
 ## Update log
 
 - 2026-11-06 — redacted public documentation, documented the 41-node published runtime versus the 33-node portable export in commit `74fc388`, and recorded cache-hit and pinned generated-branch verification with its limits.
-- 2026-11-06 — documented a successful real new-presentation production run after the serial logger fix, including successful stage logging and stale-run protection.
+- 2026-11-06 — documented a successful real new-presentation production run after the serial logger fix, including successful stage logging and stale-run protection, in commit `7aa56e4`.
+- 2026-11-06 — clarified the portable export/runtime difference and the completed metadata-only Supabase audit boundary.
