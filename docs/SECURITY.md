@@ -4,7 +4,7 @@
 - Workflow exports omit n8n credential bindings. Reassign credentials after import.
 - Sanitized workflow exports are inactive portable copies, not exact copies of every published graph. The Presentation Generator export has 33 nodes; the published runtime has 41, including seven presentation-recovery nodes and a final (16th) logger call omitted from the export. Rebind external resource references after import and do not assume the export reproduces the full published behavior.
 - The active Project Log Writer is documented, but its portable workflow export is intentionally not included in this public repository.
-- The active Project Log Writer sends sanitized, allowlisted run, stage, and aggregate KPI summaries to its configured Google Sheets destination. This is an external write; do not point a test import at the live log sheet.
+- The active Project Log Writer sends selected run, stage, and aggregate KPI summaries to its configured Google Sheets destination. The sanitizer bounds several text fields but does not pattern-validate every value. Supply only fixed or otherwise controlled labels; never pass user or report free text. This is an external write; do not point a test import at the live log sheet.
 - Do not store prompts, raw node inputs/outputs, credential values, or personal data in execution logs. Review any change to the logging allowlist before publishing.
 - Use TLS/SSL for Supabase PostgreSQL connections. Use separate least-privilege roles for ETL writes, assistant reads, and Metabase reads.
 - PostgreSQL tools in an AI workflow should be read-only. Restrict the database role itself; a system prompt alone is not an authorization boundary.
