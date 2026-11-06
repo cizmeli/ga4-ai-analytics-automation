@@ -34,7 +34,7 @@ The data is historical, anonymized sample data, not live business traffic. Repor
 |---|---|---|
 | GA4 Weekly ETL | Inactive; current 10-node configuration has no published active version | Schedule Trigger is deactivated. All available historical data is loaded; no schedule is needed. The current configuration was not runtime-tested in this sync. |
 | GA4 - Weekly AI Insights | Published and active; 24-node published graph | Accepts a selected complete week or defaults to the latest eligible pair; requires a consecutive prior week; unchanged metrics snapshots return the saved report. |
-| GA4 - AI Analytics Assistant | Published and active; 12-node graph | Authenticated chat, read-only KPI tools, on-demand insights, and explicit-request presentation tool. The saved draft has three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the published version uses `Step 30 Log Assistant ...` names. Reconcile the naming before publishing the draft. |
+| GA4 - AI Analytics Assistant | Published and active; 12-node graph | Authenticated chat, read-only KPI tools, on-demand insights, and explicit-request presentation tool. The saved draft and published version both contain three logger nodes named `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`. |
 | GA4 - Presentation Generator | Published and active; 32-node graph | Generates or reuses a deck for an eligible requested week; returns not_found if its insight cannot be produced. PowerPoint download is deactivated. The saved draft now contains 32 nodes, including all 15 Step 30 logging calls. |
 | GA4 Project Log Writer | Active shared helper; 7 nodes | Sanitizes run/stage/KPI summaries and upserts them to configured Google Sheets. This is an external write path. |
 | GA4 Temporary Read-only Permission Check | Inactive temporary workflow | Excluded from product exports. |
@@ -79,6 +79,7 @@ All included exports omit n8n credential bindings and live workflow, node, webho
 - 2026-11-06 — updated the four workflow exports and logger guidance in commit `216d0d3e` after making Step 30 calls non-blocking.
 
 - 2026-11-06 — documented the non-blocking Step 30 logger behavior across 35 calls; failed log writes can leave entries missing without stopping parent workflows.
+- 2026-11-06 — aligned Assistant published/draft logger names in status documentation with the current workflow.
 - 2026-11-06 — corrected Assistant saved-draft documentation: all three logger nodes are present, with names differing from the published version.
 - 2026-11-04 — documented selected-week on-demand insights and same-week presentation reload behavior.
 - 2026-11-04 — added GitHub-rendered Mermaid workflow diagrams.
