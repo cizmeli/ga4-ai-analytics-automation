@@ -28,7 +28,7 @@ Before running an imported workflow, choose one option:
 1. Install and configure your own Project Log Writer helper, then select it in every Step 30 node to replace the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder. Configure its spreadsheet destination and credentials in your own n8n instance.
 2. If you do not want logging, disable or remove every Step 30 call in that imported workflow before running it.
 
-Do not leave unresolved helper references in workflows you intend to run. Verify the references in each imported workflow; the helper calls are independent of the assistant's GA4 data tools.
+Connect your own helper before running if you want log entries. Unresolved references are safe for the main flow, but those log entries will be absent. Verify the references in each imported workflow; the helper calls are independent of the assistant's GA4 data tools.
 
 ## Database
 
