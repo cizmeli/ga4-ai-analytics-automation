@@ -7,9 +7,9 @@
       "typeVersion": 1,
       "position": [
         -16,
-        16
+        -176
       ],
-      "id": "0f19dc18-a104-4004-8304-a204dfcca504",
+      "id": "dfa9fc26-968e-4e0a-8ba9-e7d02688a44a",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -17,16 +17,16 @@
         "operation": "executeQuery",
         "query": "SELECT d.*, $1::text AS requested_week\nFROM (SELECT 1) AS input\nLEFT JOIN LATERAL (\n  SELECT week_start::text AS week_start, week_end::text AS week_end,\n         report_markdown, metrics_snapshot, model_name, generated_at::text AS generated_at\n  FROM public.weekly_insights\n  WHERE week_end - week_start = 6\n    AND (NULLIF($1::text, '') IS NULL OR week_start = NULLIF($1::text, '')::date)\n  ORDER BY week_start DESC\n  LIMIT 1\n) AS d ON true;",
         "options": {
-          "queryReplacement": "={{ [ $json.week_start || '' ] }}"
+          "queryReplacement": "={{ [ $('When Executed by Another Workflow').isExecuted ? ($('When Executed by Another Workflow').first().json.week_start || '') : ($('When clicking ‘Execute workflow’').isExecuted ? ($('When clicking ‘Execute workflow’').first().json.week_start || '') : '') ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
         208,
-        -80
+        -272
       ],
-      "id": "05d91b2e-9f09-4e09-8d09-9c09ab569b09",
+      "id": "1658a08a-b116-4acf-85e2-593fdd689b49",
       "name": "Get Presentation Data"
     },
     {
@@ -37,16 +37,16 @@
           "value": "REPLACE_WITH_GOOGLE_DRIVE_FILE_ID",
           "mode": "id"
         },
-        "name": "={{ 'GA4 Weekly Report - ' + $json.week_start }}",
+        "name": "={{ 'GA4 Weekly Report - ' + $('Check Existing Presentation').first().json.week_start }}",
         "options": {}
       },
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        880,
-        -176
+        1776,
+        -272
       ],
-      "id": "87bb125a-8b79-4a79-8179-9079ab3a8f79",
+      "id": "383aed4e-bd0b-464b-ade7-5324b02da282",
       "name": "Copy Presentation Template"
     },
     {
@@ -56,10 +56,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1104,
-        -176
+        2000,
+        -272
       ],
-      "id": "00325cea-4271-4171-8871-4771460a4671",
+      "id": "01173f1d-8acd-4d15-8ee7-399cdf01baa2",
       "name": "Prepare Presentation Fields"
     },
     {
@@ -76,10 +76,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1328,
-        -176
+        2224,
+        -272
       ],
-      "id": "7beff26c-af81-4e81-8981-a881ce28ab81",
+      "id": "b44b06ca-0fdc-4be5-a7a8-0dec01feeb8c",
       "name": "Fill Presentation Placeholders"
     },
     {
@@ -102,55 +102,18 @@
       "typeVersion": 3,
       "position": [
         -16,
-        240
+        144
       ],
-      "id": "acdb0105-c8ab-49ab-8eab-cfab6a15ccab",
+      "id": "e23270b5-2746-4796-9a9a-8569be522b00",
       "name": "Export PowerPoint",
       "disabled": true
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "e229b49a-a0ad-4fad-86ad-a5ad80faa4ad",
-              "name": "presentation_url",
-              "value": "={{ 'https://docs.google.com/presentation/d/' + $json.presentationId + '/edit' }}",
-              "type": "string"
-            },
-            {
-              "id": "9e270af7-28d4-49d4-82d4-23d4a69b24d4",
-              "name": "status",
-              "value": "success",
-              "type": "string"
-            },
-            {
-              "id": "9e2f59bc-a15f-405f-8b5f-9a5f4df89d5f",
-              "name": "message",
-              "value": "Presentation generated successfully.",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1776,
-        -176
-      ],
-      "id": "86ff221f-c36d-446d-8d6d-be6d06c3bf6d",
-      "name": "Return Presentation Link"
-    },
-    {
-      "parameters": {
-        "inputSource": "workflowInputs",
         "workflowInputs": {
           "values": [
             {
-              "name": "week_start",
-              "type": "string"
+              "name": "week_start"
             }
           ]
         }
@@ -159,9 +122,9 @@
       "typeVersion": 1.2,
       "position": [
         -16,
-        -176
+        -368
       ],
-      "id": "77ef7e0e-dbb5-4ab5-89b5-d8b5f836d7b5",
+      "id": "012c78dc-3aa1-4af8-aa82-80a7a6e3ffce",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -169,16 +132,16 @@
         "operation": "executeQuery",
         "query": "\nSELECT\n    i.week_start::text AS week_start,\n    i.generated_at::text AS report_generated_at,\n    p.presentation_id AS existing_presentation_id,\n\n    (p.presentation_id IS NULL) AS needs_generation\n\nFROM public.weekly_insights i\n\nLEFT JOIN public.weekly_presentations p\n    ON p.week_start = i.week_start\n    AND p.source_report_generated_at = i.generated_at\n\nWHERE i.week_start = $1::date\n\nLIMIT 1;\n",
         "options": {
-          "queryReplacement": "={{ [ $json.week_start ] }}"
+          "queryReplacement": "={{ [ $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.week_start : $('Get Presentation Data').first().json.week_start ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        432,
-        -80
+        1328,
+        -176
       ],
-      "id": "d36d7cfa-731a-421a-891a-781a3ada771a",
+      "id": "cd06ab8b-dd9a-4a18-901c-4fb2fe2799dc",
       "name": "Check Existing Presentation"
     },
     {
@@ -192,7 +155,7 @@
           },
           "conditions": [
             {
-              "id": "380472fd-904c-414c-864c-974c59cd944c",
+              "id": "bbca9bc3-1a2b-4fba-a2b9-cc7d183a624a",
               "leftValue": "={{ $json.needs_generation }}",
               "rightValue": "",
               "operator": {
@@ -209,73 +172,30 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        656,
-        -80
+        1552,
+        -176
       ],
-      "id": "28fb63a0-f78e-468e-898e-f88e75d4fb8e",
+      "id": "cf31a79f-024f-4e87-8dd4-c93384e32ad7",
       "name": "Presentation Needs Generation?"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "d04d2805-0713-4813-8d13-0e1369150b13",
-              "name": "presentation_url",
-              "value": "={{ 'https://docs.google.com/presentation/d/' + $json.existing_presentation_id + '/edit' }}",
-              "type": "string"
-            },
-            {
-              "id": "0c4fc510-0f18-4e17-8118-101802441318",
-              "name": "status",
-              "value": "success",
-              "type": "string"
-            },
-            {
-              "id": "0c49094b-7d40-4e40-8f40-8040a5e78140",
-              "name": "message",
-              "value": "Existing presentation reused.",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        880,
-        16
-      ],
-      "id": "cb51c6e1-54c6-45c6-82c6-53c65db950c6",
-      "name": "Return Existing Presentation Link"
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "\nINSERT INTO public.weekly_presentations (\n    week_start,\n    presentation_id,\n    source_report_generated_at\n)\nVALUES (\n    $1::date,\n    $2::text,\n    $3::timestamptz\n)\nON CONFLICT (week_start)\nDO UPDATE SET\n    presentation_id = EXCLUDED.presentation_id,\n    source_report_generated_at =\n        EXCLUDED.source_report_generated_at,\n    updated_at = NOW()\nRETURNING\n    week_start::text AS week_start,\n    presentation_id AS \"presentationId\";\n",
         "options": {
-          "queryReplacement": "={{\n  [\n    $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.week_start : $('Get Presentation Data').first().json.week_start,\n    $json.presentationId,\n    $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.generated_at : $('Get Presentation Data').first().json.generated_at\n  ]\n}}\n"
+          "queryReplacement": "={{ [ $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.week_start : $('Get Presentation Data').first().json.week_start, $('Prepare Presentation Fields').first().json.presentationId, $('Reload Presentation Data').isExecuted ? $('Reload Presentation Data').first().json.generated_at : $('Get Presentation Data').first().json.generated_at ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1552,
-        -176
+        2448,
+        -272
       ],
-      "id": "d181a127-70ee-41ee-8aee-6beebb8b6cee",
+      "id": "446dc9ca-5748-4f2c-a5dc-58efd07782ce",
       "name": "Save Presentation Record"
     },
     {
-      "id": "a6daefc4-11ee-40ee-8bee-0aeea6400dee",
-      "name": "Weekly Report Found?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        320,
-        -240
-      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -286,7 +206,8 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.week_start || '' }}",
+              "id": "report-found",
+              "leftValue": "={{ $('Get Presentation Data').first().json.week_start || '' }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -298,27 +219,28 @@
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "00c6fd77-6275-4dca-b942-ab70e969e7f4",
+      "name": "Weekly Report Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        -272
+      ]
     },
     {
-      "id": "fb33ce2f-be88-4f88-8888-b9889f13ba88",
-      "name": "Return Missing Report",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        512,
-        -240
-      ],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
+              "id": "status",
               "name": "status",
               "type": "string",
               "value": "not_found"
             },
             {
+              "id": "message",
               "name": "message",
               "type": "string",
               "value": "={{ $('Get Presentation Data').first().json.requested_week ? 'No weekly insights report or KPI comparison found for week starting ' + $('Get Presentation Data').first().json.requested_week + '.' : 'No complete weekly insights report or KPI comparison found.' }}"
@@ -326,28 +248,29 @@
           ]
         },
         "options": {}
-      }
+      },
+      "id": "3f810ab2-2ba8-4fe2-b618-a1f15df99ffd",
+      "name": "Return Missing Report",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1328,
+        -400
+      ]
     },
     {
-      "id": "de9f7f35-b227-4327-8827-b927d645b627",
-      "name": "Generate Missing Weekly Insights",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        544,
-        -400
-      ],
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
-          "mode": "list"
+          "value": "SELECT_WEEKLY_AI_INSIGHTS_WORKFLOW_AFTER_IMPORT",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/SI7c2Q3e0HMBEVD7",
+          "cachedResultName": "GA4 - Weekly AI Insights"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "week_start": "={{ $json.requested_week || '' }}"
+            "week_start": "={{ $('Get Presentation Data').first().json.requested_week || '' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -364,38 +287,37 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         },
-        "mode": "once",
         "options": {
           "waitForSubWorkflow": true
         }
-      }
+      },
+      "id": "71cac7bf-4310-483d-936e-86b120e169df",
+      "name": "Generate Missing Weekly Insights",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        -352
+      ]
     },
     {
-      "id": "ce26b782-f4a5-43a5-8aa5-f9a578a2f8a5",
-      "name": "Reload Presentation Data",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        800,
-        -400
-      ],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT d.*, $1::text AS requested_week\nFROM (SELECT 1) AS input\nLEFT JOIN LATERAL (\n  SELECT week_start::text AS week_start, week_end::text AS week_end,\n         report_markdown, metrics_snapshot, model_name, generated_at::text AS generated_at\n  FROM public.weekly_insights\n  WHERE week_end - week_start = 6\n    AND (NULLIF($1::text, '') IS NULL OR week_start = NULLIF($1::text, '')::date)\n  ORDER BY week_start DESC\n  LIMIT 1\n) AS d ON true;",
         "options": {
           "queryReplacement": "={{ [ $('Get Presentation Data').first().json.requested_week || '' ] }}"
         }
-      }
+      },
+      "id": "ec9d98c0-4656-48cc-8b3a-75864b3644c5",
+      "name": "Reload Presentation Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        -352
+      ]
     },
     {
-      "id": "ff3068ec-2a6b-496b-846b-236b68a8266b",
-      "name": "Reloaded Weekly Report Found?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        1056,
-        -400
-      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -406,8 +328,8 @@
           },
           "conditions": [
             {
-              "id": "31172a5f-0bb7-4cb7-85b7-06b7b28307b7",
-              "leftValue": "={{ $json.week_start || '' }}",
+              "id": "87f302d2-a326-4042-a759-7aa16e7b0a32",
+              "leftValue": "={{ $('Reload Presentation Data').first().json.week_start || '' }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -419,10 +341,18 @@
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "c54e3aec-e5e4-480a-accb-7578b36953d6",
+      "name": "Reloaded Weekly Report Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        -352
+      ]
     },
     {
-      "id": "04950cd4-8f3d-4e3d-893d-883dcd108b3d",
+      "id": "fb7d7f89-79d6-4694-a240-fb6251344c7e",
       "name": "Step 30 Log Presentation 01 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -435,7 +365,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -656,14 +587,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "369d23c4-fd5e-4c5e-875d-f65dfa40f95d",
+      "id": "6c32286e-a712-4527-be2d-c1e131f494f5",
       "name": "Step 30 Log Presentation 02 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -676,7 +606,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -897,14 +828,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "1a91ff55-da8b-4b8b-808b-e18bd8e5de8b",
+      "id": "af51a1c9-8530-4678-8f19-6ed77b0eb9eb",
       "name": "Step 30 Log Presentation 03 primary report fetch",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -917,7 +847,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -1138,14 +1069,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "5745209f-886b-496b-826b-836b6943846b",
+      "id": "1335a9be-25b5-4248-9f30-aa72b5387493",
       "name": "Step 30 Log Presentation 04 weekly report availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1158,7 +1088,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -1379,14 +1310,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "ea915ae7-aa68-4b68-8468-a56834cba668",
+      "id": "52ad41c8-bd53-45b3-bc73-249acecb32be",
       "name": "Step 30 Log Presentation 05 weekly report availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1399,7 +1329,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -1620,14 +1551,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "c24e9de7-def6-4ff6-88f6-d9f6afcbdaf6",
+      "id": "70b42fb3-d355-470b-99d8-6beb300fb5ae",
       "name": "Step 30 Log Presentation 06 missing insights generation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1640,7 +1570,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -1861,14 +1792,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "515ffe79-964a-474a-844a-954a6491924a",
+      "id": "14f9ea19-10d5-4c6e-9497-b4c17f6fcaca",
       "name": "Step 30 Log Presentation 07 reload and availability check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1881,7 +1811,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -2102,14 +2033,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "8fc2656d-d79e-489e-8d9e-de9e8e7ddb9e",
+      "id": "27d1403e-2f81-4d69-b7d9-f97f3ef396c7",
       "name": "Step 30 Log Presentation 08 reload and availability check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2122,7 +2052,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -2343,14 +2274,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "ac5b2102-e56b-446b-8b6b-ea6bbe22e96b",
+      "id": "fa8075fa-15c5-43a1-a0d1-84edbfe28241",
       "name": "Step 30 Log Presentation 09 presentation existence check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2363,7 +2293,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -2584,14 +2515,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "0b5b92ef-dc1c-4d1c-861c-d71c9b53d81c",
+      "id": "a0dc1665-288e-456f-a3d2-a3758dd6066e",
       "name": "Step 30 Log Presentation 10 presentation existence check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2604,7 +2534,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -2825,14 +2756,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "c07ea978-075e-465e-895e-085ea6ac0b5e",
+      "id": "0f398916-1542-4c27-8a9b-bb64affb1521",
       "name": "Step 30 Log Presentation 11 document generation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2845,7 +2775,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -3066,14 +2997,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "08f22b92-cf88-4e88-8588-d4887cb2d388",
+      "id": "fe4133fa-46ab-498c-9ab4-633a57e1a32b",
       "name": "Step 30 Log Presentation 12 external persistence/export",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3086,7 +3016,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -3307,14 +3238,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "b9713d51-0b9d-4c9d-899d-0a9debe9079d",
+      "id": "1ff76418-ef0c-4de6-876c-6bb67507ff25",
       "name": "Step 30 Log Presentation 13 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3327,7 +3257,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -3352,7 +3283,7 @@
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
             "saveMode": "Google Drive copy + PostgreSQL presentation record",
-            "sourceReport": "={{ \"exec:\" + $execution.id + ($json.presentationId ? \"|output:\" + $json.presentationId : \"\") }}",
+            "sourceReport": "={{ 'exec:' + $execution.id + '|output:' + $('Save Presentation Record').first().json.presentationId }}",
             "kpis": "={{ [] }}"
           },
           "schema": [
@@ -3548,14 +3479,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "ac961df4-1b78-4a78-8578-147814301778",
+      "id": "43bd1924-98fe-4f2a-93c6-c0c5f524b1f3",
       "name": "Step 30 Log Presentation 14 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3568,7 +3498,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -3593,7 +3524,7 @@
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
             "saveMode": "Google Drive copy + PostgreSQL presentation record",
-            "sourceReport": "={{ \"exec:\" + $execution.id + ($json.presentationId ? \"|output:\" + $json.presentationId : \"\") }}",
+            "sourceReport": "={{ 'exec:' + $execution.id + '|output:' + $('Check Existing Presentation').first().json.existing_presentation_id }}",
             "kpis": "={{ [] }}"
           },
           "schema": [
@@ -3789,14 +3720,13 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "9a4af758-55a6-44a6-87a6-56a6568c59a6",
+      "id": "e701519f-f875-412a-a16f-43e4f04ba20b",
       "name": "Step 30 Log Presentation 15 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3809,7 +3739,8 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_PROJECT_LOG_WRITER_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
         "mode": "once",
         "workflowInputs": {
@@ -4030,22 +3961,121 @@
           ]
         },
         "options": {
-          "waitForSubWorkflow": true
+          "waitForSubWorkflow": false
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "b4088c64-cc8b-49a2-bcf6-0c13a2c83981",
+      "name": "Return Tool Result - generated",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2420,
+        1160
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b4088c64-cc8b-49a2-bcf6-0c13a2c83981-url",
+              "name": "presentation_url",
+              "value": "={{ 'https://docs.google.com/presentation/d/' + $('Save Presentation Record').first().json.presentationId + '/edit' }}",
+              "type": "string"
+            },
+            {
+              "id": "b4088c64-cc8b-49a2-bcf6-0c13a2c83981-status",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "b4088c64-cc8b-49a2-bcf6-0c13a2c83981-message",
+              "name": "message",
+              "value": "Presentation generated successfully.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "05826255-cc0a-42fb-90fe-4e5b49fb348d",
+      "name": "Return Tool Result - reused",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2420,
+        1290
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "05826255-cc0a-42fb-90fe-4e5b49fb348d-url",
+              "name": "presentation_url",
+              "value": "={{ 'https://docs.google.com/presentation/d/' + $('Check Existing Presentation').first().json.existing_presentation_id + '/edit' }}",
+              "type": "string"
+            },
+            {
+              "id": "05826255-cc0a-42fb-90fe-4e5b49fb348d-status",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "05826255-cc0a-42fb-90fe-4e5b49fb348d-message",
+              "name": "message",
+              "value": "Existing presentation reused.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "347972ca-efdd-4dad-ae98-7e0a8c8a68b6",
+      "name": "Return Tool Result - not found",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2420,
+        1420
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "347972ca-efdd-4dad-ae98-7e0a8c8a68b6-url",
+              "name": "presentation_url",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "347972ca-efdd-4dad-ae98-7e0a8c8a68b6-status",
+              "name": "status",
+              "value": "={{ $('Return Missing Report').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "347972ca-efdd-4dad-ae98-7e0a8c8a68b6-message",
+              "name": "message",
+              "value": "={{ $('Return Missing Report').first().json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
     "When clicking ‘Execute workflow’": {
       "main": [
         [
-          {
-            "node": "Get Presentation Data",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 01 trigger/start",
             "type": "main",
@@ -4080,11 +4110,6 @@
       "main": [
         [
           {
-            "node": "Save Presentation Record",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Step 30 Log Presentation 11 document generation",
             "type": "main",
             "index": 0
@@ -4095,11 +4120,6 @@
     "When Executed by Another Workflow": {
       "main": [
         [
-          {
-            "node": "Get Presentation Data",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 02 trigger/start",
             "type": "main",
@@ -4123,22 +4143,12 @@
       "main": [
         [
           {
-            "node": "Copy Presentation Template",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Step 30 Log Presentation 09 presentation existence check",
             "type": "main",
             "index": 0
           }
         ],
         [
-          {
-            "node": "Return Existing Presentation Link",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 10 presentation existence check",
             "type": "main",
@@ -4151,11 +4161,6 @@
       "main": [
         [
           {
-            "node": "Return Presentation Link",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Step 30 Log Presentation 12 external persistence/export",
             "type": "main",
             "index": 0
@@ -4166,11 +4171,6 @@
     "Get Presentation Data": {
       "main": [
         [
-          {
-            "node": "Weekly Report Found?",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 03 primary report fetch",
             "type": "main",
@@ -4183,22 +4183,12 @@
       "main": [
         [
           {
-            "node": "Check Existing Presentation",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Step 30 Log Presentation 04 weekly report availability gate",
             "type": "main",
             "index": 0
           }
         ],
         [
-          {
-            "node": "Generate Missing Weekly Insights",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 05 weekly report availability gate",
             "type": "main",
@@ -4210,11 +4200,6 @@
     "Generate Missing Weekly Insights": {
       "main": [
         [
-          {
-            "node": "Reload Presentation Data",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 06 missing insights generation",
             "type": "main",
@@ -4238,22 +4223,12 @@
       "main": [
         [
           {
-            "node": "Check Existing Presentation",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Step 30 Log Presentation 07 reload and availability check",
             "type": "main",
             "index": 0
           }
         ],
         [
-          {
-            "node": "Return Missing Report",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Step 30 Log Presentation 08 reload and availability check",
             "type": "main",
@@ -4262,22 +4237,121 @@
         ]
       ]
     },
-    "Return Presentation Link": {
+    "Step 30 Log Presentation 13 final return": {
       "main": [
         [
           {
-            "node": "Step 30 Log Presentation 13 final return",
+            "node": "Return Tool Result - generated",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Return Existing Presentation Link": {
+    "Step 30 Log Presentation 14 final return": {
       "main": [
         [
           {
-            "node": "Step 30 Log Presentation 14 final return",
+            "node": "Return Tool Result - reused",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 15 final return": {
+      "main": [
+        [
+          {
+            "node": "Return Missing Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 01 trigger/start": {
+      "main": [
+        [
+          {
+            "node": "Get Presentation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 02 trigger/start": {
+      "main": [
+        [
+          {
+            "node": "Get Presentation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 03 primary report fetch": {
+      "main": [
+        [
+          {
+            "node": "Weekly Report Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 04 weekly report availability gate": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 05 weekly report availability gate": {
+      "main": [
+        [
+          {
+            "node": "Generate Missing Weekly Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 06 missing insights generation": {
+      "main": [
+        [
+          {
+            "node": "Reload Presentation Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 07 reload and availability check": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Presentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 08 reload and availability check": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 15 final return",
             "type": "main",
             "index": 0
           }
@@ -4288,7 +4362,51 @@
       "main": [
         [
           {
-            "node": "Step 30 Log Presentation 15 final return",
+            "node": "Return Tool Result - not found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 09 presentation existence check": {
+      "main": [
+        [
+          {
+            "node": "Copy Presentation Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 10 presentation existence check": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 14 final return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 11 document generation": {
+      "main": [
+        [
+          {
+            "node": "Save Presentation Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Step 30 Log Presentation 12 external persistence/export": {
+      "main": [
+        [
+          {
+            "node": "Step 30 Log Presentation 13 final return",
             "type": "main",
             "index": 0
           }
