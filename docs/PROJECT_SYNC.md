@@ -76,6 +76,8 @@ All included exports omit n8n credential bindings and live workflow, node, webho
 
 ## Update log
 
+- 2026-11-06 — aligned Assistant and Presentation draft status with published workflows in commit `859857d1`.
+
 - 2026-11-06 — updated the four workflow exports and logger guidance in commit `216d0d3e` after making Step 30 calls non-blocking.
 
 - 2026-11-06 — documented the non-blocking Step 30 logger behavior across 35 calls; failed log writes can leave entries missing without stopping parent workflows.
