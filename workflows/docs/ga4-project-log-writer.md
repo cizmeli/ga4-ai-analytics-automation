@@ -1,6 +1,6 @@
 # GA4 Project Log Writer
 
-**Observed state:** published active shared helper, 9 nodes. It is invoked by Step 30 logging nodes in the four GA4 workflows.
+**Observed state:** published active shared helper, 9 nodes. Four GA4 workflows invoke it through logging nodes. **GA4 - AI Analytics Assistant** uses `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the other three use `Step 30` logging nodes.
 
 ## Serial node order and purpose
 
@@ -27,7 +27,7 @@ The Google Sheets nodes in the live helper write to its configured logging workb
 
 ~~~mermaid
 flowchart LR
-  T[Called Workflow Trigger] --> S[Sanitize Logging Payload] --> U[Upsert Stage Row] --> RQ{Update Run Row?}
+  T["When Executed by Another Workflow"] --> S[Sanitize Logging Payload] --> U[Upsert Stage Row] --> RQ{Update Run Row?}
   RQ -->|Yes| RU[Upsert Run Row]
   RQ -->|No| K[Expand KPI Rows]
   RU --> K
