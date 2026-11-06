@@ -21,7 +21,7 @@
 
 ## Step 30 logging prerequisite
 
-The four included workflow exports contain 35 Step 30 calls to the Project Log Writer helper. Every call uses the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder because the helper workflow export is not included in this public repository. The calls use `stopWorkflow` behavior, so an unresolved helper reference can stop the parent workflow.
+The four included workflow exports contain 35 Step 30 calls to the Project Log Writer helper. Every call uses the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder because the helper workflow export is not included in this public repository. Logger calls now continue on error: an unresolved helper can leave a log entry missing, but does not stop the parent workflow.
 
 Before running an imported workflow, choose one option:
 
