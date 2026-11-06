@@ -2,7 +2,7 @@
 
 **Observed state:** published and active on 2026-11-06. The published version has 32 nodes. PowerPoint export/download remains deactivated.
 
-**Saved-draft caution (checked 2026-11-06):** The current saved draft has 17 nodes and omits all 15 Step 30 logging calls present in the active published graph. Reconcile the logging nodes and connections before publishing the draft; otherwise those runtime calls would be lost. The published version remains the runtime reference.
+**Saved-draft caution (checked 2026-11-06):** The current saved draft and active published graph both contain all 15 Step 30 logging calls. Logger failures continue through the parent workflow; a failed call can leave its log entry missing. The published version remains the runtime reference.
 
 ## Node order and purpose
 
