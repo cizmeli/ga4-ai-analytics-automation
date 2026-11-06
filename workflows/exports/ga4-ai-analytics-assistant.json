@@ -931,7 +931,7 @@
             "index": 0
           },
           {
-            "node": "Step 30 Log Assistant 01 chat trigger/start",
+            "node": "Log Assistant Run Start",
             "type": "main",
             "index": 0
           }
@@ -1019,12 +1019,12 @@
       "main": [
         [
           {
-            "node": "Step 30 Log Assistant 02 agent/tool summary (5 tools configured: Get Latest Week KPIs; Get Weekly Trends; Get Saved Week",
+            "node": "Log Assistant Agent Stage",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Assistant 03 final response",
+            "node": "Log Assistant Run Completion",
             "type": "main",
             "index": 0
           }
