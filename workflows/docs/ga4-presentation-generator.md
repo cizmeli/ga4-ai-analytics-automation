@@ -17,9 +17,9 @@ The sanitized JSON export contains 33 nodes and is inactive for portable use. It
 
 ## Verification limits
 
-On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached presentation. All nine Presentation stages succeeded, and 19 logger executions in the run window succeeded without retries. The logger helper remains active.
+On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached presentation. The logger helper remains active.
 
-The Assistant final-response row succeeded with `updateRunRow=true`. A later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, preventing stale-start data from overwriting the completed run. The missing-insights then reload branch was not tested in this round.
+The same run exercised the missing-insights then reload path: `Weekly Report Found?` took its no-result branch, `Generate Missing Weekly Insights` succeeded, `Reload Presentation Data` ran, and `Reloaded Weekly Report Found?` took its found branch. Presentation stages 06 and 07 succeeded. All nine Presentation stages succeeded, and 19 Log Writer executions in the run window succeeded without retries. The Assistant final-response row succeeded with `updateRunRow=true`; a later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, preventing stale-start data from overwriting the completed run.
 
 A clean n8n import has not been validated. Review and configure the export before use.
 

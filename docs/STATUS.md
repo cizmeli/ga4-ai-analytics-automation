@@ -23,7 +23,7 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 - On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow succeeded and created a new Slides deck for the reporting week 2020-12-27 through 2021-01-02; it did not reuse a cached deck.
 - All nine Presentation stages succeeded. Nineteen Log Writer executions in the run window succeeded without retries, and the logger helper remains active.
 - The Assistant final-response row succeeded with `runStatus=succeeded` and `updateRunRow=true`. The later `chat-trigger-start` row had `updateRunRow=false`, skipped Upsert Run Row, and did not overwrite the completed run with stale-start data.
-- This verifies a real new-presentation production run after the serial logger fix. The missing-insights then reload branch was not tested in this round.
+- The same production run also exercised the missing-insights then reload path: `Weekly Report Found?` took its no-result branch, `Generate Missing Weekly Insights` succeeded, `Reload Presentation Data` ran, and `Reloaded Weekly Report Found?` took its found branch. Presentation stages 06 and 07 succeeded.
 
 Existing history includes insights reports and cached returns for eligible complete weeks. Existing presentation fault-injection cases stopped before save when a copied file ID was missing or a fake Slides ID returned 404; these were expected negative tests, not evidence of a provider outage. Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
 
