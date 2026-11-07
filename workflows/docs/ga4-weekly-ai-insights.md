@@ -47,25 +47,25 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 flowchart LR
   M[Manual Trigger] --> Q[Get Weekly Comparison]
   C[Assistant Called Workflow] --> Q
-  Q -.-> L3[Step 30 Log: comparison fetch]
+  Q -.-> L3[Step 30 Log Insights 03 primary KPI comparison fetch]
   Q --> F{Eligible comparison?}
   F -->|no| MK[Return Missing KPI]
-  F -.-> L4[Step 30 Log: no comparison]
-  F -.-> L5[Step 30 Log: comparison found]
+  F -.-> L4[Step 30 Log Insights 04 weekly comparison availability gate]
+  F -.-> L5[Step 30 Log Insights 05 weekly comparison availability gate]
   F -->|yes| K[Check Report Needs Generation]
-  K -.-> L6[Step 30 Log: generation decision]
+  K -.-> L6[Step 30 Log Insights 06 report freshness/generation gate]
   K --> B{Needs AI Generation?}
   B -->|yes| G[Generate Weekly Insights]
-  G -.-> L8[Step 30 Log: model generation]
+  G -.-> L8[Step 30 Log Insights 08 AI model generation]
   G --> S[Save Weekly Insights]
-  S -.-> L9[Step 30 Log: persistence]
+  S -.-> L9[Step 30 Log Insights 09 insights persistence]
   S --> R1[Return Generated Insights]
   B -->|no| R2[Return Saved Insights]
-  R1 -.-> L10[Step 30 Log: generated return]
-  R2 -.-> L11[Step 30 Log: cached return]
-  MK -.-> L12[Step 30 Log: not_found return]
-  M -.-> L1[Step 30 Log: manual start]
-  C -.-> L2[Step 30 Log: called start]
+  R1 -.-> L10[Step 30 Log Insights 10 final return]
+  R2 -.-> L11[Step 30 Log Insights 11 final return]
+  MK -.-> L12[Step 30 Log Insights 12 final return]
+  M -.-> L1[Step 30 Log Insights 01 trigger/start]
+  C -.-> L2[Step 30 Log Insights 02 trigger/start]
   L1 --> LOG[GA4 Project Log Writer]
   L2 --> LOG
   L3 --> LOG
