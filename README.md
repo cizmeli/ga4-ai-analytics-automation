@@ -69,7 +69,7 @@ The workflow exports contain no API secrets or credential values. They are refer
 ## Offline evidence and deliverables
 
 - [Assistant chat test evidence](output/ga4-assistant-chat-test-evidence-2026-11-07.md): 10 of 10 reviewed cases passed in a clean second round.
-- [GA4 Slides template v1](output/GA4_Weekly_Executive_Report_Template.pptx), [v2](output/GA4_Weekly_Executive_Report_Template_v2.pptx), and [v3](output/GA4_Weekly_Executive_Report_Template_v3.pptx): offline presentation template revisions.
+- [GA4 Slides template v1](output/GA4_Weekly_Executive_Report_Template.pptx), [v2](output/GA4_Weekly_Executive_Report_Template_v2.pptx), and [v3](output/GA4_Weekly_Executive_Report_Template_v3.pptx): offline presentation template revisions created for this project.
 - [Metabase dashboard notes](docs/METABASE_DASHBOARD.md): local dashboard metadata and known evidence gaps; no screenshot or portable dashboard export is checked in.
 
 ## License
