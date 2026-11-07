@@ -19,7 +19,7 @@
 6. Confirm node parameters and expressions against your n8n version. The exports are portable starting points, not turnkey credentials.
 7. Keep the ETL schedule disabled. The historical sample period is already loaded, and the source ETL is inactive. Do not enable a schedule unless the source data and reload plan change.
 
-## Step 30 logging prerequisite
+## Logging setup
 
 The four included workflow exports contain 35 Step 30 calls to the Project Log Writer helper. Every call uses the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder because the helper workflow export is not included in this public repository. Logger calls now continue on error: an unresolved helper can leave a log entry missing, but does not stop the parent workflow.
 
