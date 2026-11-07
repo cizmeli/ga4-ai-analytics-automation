@@ -4,7 +4,7 @@ The Presentation Generator prepares or reuses a presentation for an eligible rep
 
 ## Published runtime
 
-The published, active runtime contains 41 nodes. Its graph includes seven presentation-recovery nodes and 16 serialized logging calls, including a final logger call.
+The published, active graph captured on 2026-11-07 contains 41 nodes. The inactive portable export has the same 41-node structure, including seven presentation-recovery nodes and 16 serialized logging calls.
 
 - Retrieves the requested week's report, with a fallback to the latest eligible period when no week is specified.
 - If the report is missing, requests an update and checks again. It returns `not_found` when no eligible report is available.
@@ -13,13 +13,30 @@ The published, active runtime contains 41 nodes. Its graph includes seven presen
 
 ## Portable export
 
-The sanitized JSON export contains 33 nodes and is inactive for portable use. It omits the seven presentation-recovery nodes and the final (16th) logger call, so it contains 15 logging calls and does not exactly match the published runtime. Generic placeholders must be configured for your own environment before use.
+The sanitized JSON export contains the same 41 nodes as the captured live graph and is inactive for portable use. Its 16 logging calls are:
+
+- `Log Presentation — Manual run started`
+- `Log Presentation — Subworkflow run started`
+- `Log Presentation — Source report loaded`
+- `Log Presentation — Report available`
+- `Log Presentation — Report unavailable`
+- `Log Presentation — Insights generated`
+- `Log Presentation — Reloaded report available`
+- `Log Presentation — Reloaded report unavailable`
+- `Log Presentation — Existing presentation not found`
+- `Log Presentation — Existing presentation found`
+- `Log Presentation — Presentation content prepared`
+- `Log Presentation — Presentation record saved`
+- `Log Presentation — Presentation result returned`
+- `Log Presentation — Existing presentation returned`
+- `Log Presentation — Report not found returned`
+- `Log Presentation — Duplicate presentations detected`
+
+Workflow IDs, credentials, the GCP project, and the Slides template are omitted or replaced with portable placeholders.
 
 ## Verification limits
 
-On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached presentation. The logger helper remains active.
-
-The same run exercised the missing-insights then reload path: `Weekly Report Found?` took its no-result branch, `Generate Missing Weekly Insights` succeeded, `Reload Presentation Data` ran, and `Reloaded Weekly Report Found?` took its found branch. Presentation stages 06 and 07 succeeded. All nine Presentation stages succeeded, and 19 Log Writer executions in the run window succeeded without retries. The Assistant final-response row succeeded with `updateRunRow=true`; a later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, preventing stale-start data from overwriting the completed run.
+No production workflow was executed for this synchronization. The graph and structural review do not establish that every report-generation, recovery, or logging branch succeeds.
 
 A clean n8n import has not been validated. Review and configure the export before use.
 
