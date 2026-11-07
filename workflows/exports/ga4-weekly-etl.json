@@ -1,5 +1,4 @@
 {
-  "id": "6346245e-1f12-4d69-a056-27d3b44bf50d",
   "name": "GA4 Weekly ETL",
   "nodes": [
     {
@@ -14,7 +13,7 @@
         -112,
         -32
       ],
-      "id": "afbb4d73-734a-444a-854a-764a468f774a",
+      "id": "d0473a7d-696f-4d04-88bf-04ea0c297421",
       "name": "Supabase-Get Next Week"
     },
     {
@@ -37,7 +36,7 @@
         -336,
         -32
       ],
-      "id": "8f63751f-aa21-4b21-8421-a52111c3a621",
+      "id": "cb1bbb2e-4853-4cc9-87ea-35c929fabce8",
       "name": "Schedule Trigger",
       "disabled": true
     },
@@ -57,7 +56,7 @@
         112,
         -32
       ],
-      "id": "c758c8ec-40ba-4fba-8aba-39bac8a83cba",
+      "id": "7df4d228-f96c-469a-a287-b16ae39e3231",
       "name": "BigQuery-Weekly KPIs"
     },
     {
@@ -171,7 +170,7 @@
         336,
         -32
       ],
-      "id": "933725e1-5f20-4020-8d20-5e2054b95b20",
+      "id": "fee60cad-4153-4fc9-947a-248fa63354f4",
       "name": "Supabase-Upsert KPIs"
     },
     {
@@ -199,11 +198,11 @@
         544,
         -32
       ],
-      "id": "eb7b5213-8120-4220-8320-842034af8520",
+      "id": "345cf7c3-0afd-4110-b8ce-26e6596045d0",
       "name": "Trigger Weekly AI Insights"
     },
     {
-      "id": "0a58a552-2c15-4b15-8215-311522f23015",
+      "id": "fcd939c3-bc58-4123-b06a-0890f5ea4bd6",
       "name": "Step 30 Log ETL 01 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -444,7 +443,7 @@
       "retryOnFail": false
     },
     {
-      "id": "ab7079a6-7a15-4915-8815-7714ff4e7614",
+      "id": "92b337e1-deb5-498c-b8c7-84a3e0284fa5",
       "name": "Step 30 Log ETL 02 weekly window fetch",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -685,7 +684,7 @@
       "retryOnFail": false
     },
     {
-      "id": "3fff8ca3-83c6-44c6-85c6-86c63f7f87c6",
+      "id": "fc31d41e-4a4f-4d04-a327-30d5720c7025",
       "name": "Step 30 Log ETL 03 aggregate KPI computation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -926,7 +925,7 @@
       "retryOnFail": false
     },
     {
-      "id": "1df180ba-f488-4388-8a88-f9887b1af888",
+      "id": "c6823d95-bfac-4e2b-bd70-473335453e6d",
       "name": "Step 30 Log ETL 04 KPI persistence",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1167,7 +1166,7 @@
       "retryOnFail": false
     },
     {
-      "id": "bd8d2eeb-f6c3-47c3-88c3-f9c35587fac3",
+      "id": "bfe3b39b-8a18-460b-86c1-101edb85227e",
       "name": "Step 30 Log ETL 05 weekly insights handoff",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,

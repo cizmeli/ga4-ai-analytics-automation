@@ -1,42 +1,40 @@
 # Project Sync Notes
 
-This file summarizes the public repository for future documentation updates. Keep project documentation in English. Do not add credentials, tokens, personal data, private identifiers, or private URLs.
+This file is the continuation point for this repository. Refresh it when contents or project state change materially. Never include credentials, access tokens, private keys, personal data, or secret-bearing workflow exports.
 
-## Project summary
+## Repository
 
-This portfolio project uses anonymized historical GA4 sample data to demonstrate weekly analytics, dashboarding, AI-assisted analysis, and presentation generation. The data is historical demonstration data, not live business traffic.
+- GitHub repository: [`cizmeli/ga4-ai-analytics-automation`](https://github.com/cizmeli/ga4-ai-analytics-automation)
+- GitHub metadata confirms the repository is public (checked 2026-11-07).
+- Project artifacts are written in English; conversation with the owner may be Turkish.
 
-The repository contains setup guidance, sanitized workflow exports, workflow guides, sample queries, and local configuration examples. Users must supply and configure their own services, credentials, and external assets.
+## Project purpose
 
-## Current presentation export and runtime
+A learning and portfolio project based on anonymized historical GA4 ecommerce sample data (2020-11-01 through 2021-01-31): BigQuery weekly aggregation, Supabase metrics and reports, Metabase visualizations, an n8n assistant, saved weekly insights, Google Slides reports, and a shared Google Sheets log writer.
 
-The published, active Presentation Generator runtime contains 41 nodes, including seven presentation-recovery nodes and 16 serialized logging calls. The sanitized, inactive portable export contains 33 nodes: it omits those seven recovery nodes and the final (16th) logger call, leaving 15 logging calls. The export is not a node-for-node copy of the published runtime. See [the workflow guide](../workflows/docs/ga4-presentation-generator.md) for the behavior and verification limits.
+Reporting intervals start on Sunday, span seven days, and end with a one-day partial period. Exclude the partial period from complete-week comparisons. Weekly distinct users are not additive across weeks.
 
-On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow created a new Slides deck for 2020-12-27 through 2021-01-02 rather than reusing a cached deck. The same run exercised the missing-insights then reload path: `Weekly Report Found?` took its no-result branch, `Generate Missing Weekly Insights` succeeded, `Reload Presentation Data` ran, and `Reloaded Weekly Report Found?` took its found branch. All nine Presentation stages succeeded, including stages 06 and 07, and 19 logger executions in the run window succeeded without retries. The logger helper remains active. The Assistant final-response row succeeded with `updateRunRow=true`; a later `chat-trigger-start` row had `updateRunRow=false` and skipped Upsert Run Row, so it did not overwrite the completed run with stale-start data. This is runtime evidence for the published production path after the serial logger fix.
+## Current evidence
 
-The export has not been re-imported into a clean n8n instance. Do not describe it as import-tested.
+- The four checked-in workflow exports are inactive, omit workflow-level IDs, and use regenerated node UUIDs. The 33-node Presentation Generator export differs from its documented 41-node published runtime; see `workflows/docs/` for each export's scope.
+- Isolated import evidence dated 2026-11-06 records four imported inactive workflows and no executions; it predates the current export node UUID regeneration.
+- Assistant test evidence dated 2026-11-07 records 10/10 clean-round test cases passing; this does not establish that all workflow branches were tested.
+- Live spreadsheet inspection confirms five log workbook tabs: `Runs`, `Stage Log`, `KPI Values`, `Evaluations`, and `Changes & Backups`. See [the verified header inventory](GA4_PROJECT_LOG_SCHEMA.md). The workflow and workbook binding are intentionally not exported here.
+- Dashboard notes exist, but its observed period differs from the latest chat evidence. Reinspect the live dashboard before describing it as current.
+- Offline GA4 Slides template revisions and the assistant test report are in `output/`.
 
-## Repository map
+## Continuation rules
 
-- `README.md` — project overview, safe setup summary, and validation notes.
-- `workflows/exports/` — sanitized portable workflow files.
-- `workflows/docs/` — public workflow guides.
-- `prompts/` and `sql/` — example prompts and analytics references.
-- `docs/` — setup, security, status, and project notes.
-- `docker/` and `.env.example` — local configuration examples.
+1. Treat `sources/` as read-only project reference material.
+2. For actual workflow behavior, inspect the current workflow instance or exact export snapshot and clearly identify which one supports each claim.
+3. Keep credentials, instance-specific workflow and workbook IDs, personal data, and unredacted execution payloads out of this public repository.
+4. Do not claim active scheduling, current dashboard accuracy, validated database grants/RLS, or complete workflow QA without direct evidence.
+5. Keep any workflow create/update/delete/activation/execution behind explicit user approval. Documentation and read-only review do not authorize workflow changes.
+6. Before publishing or committing, inspect changed files for secrets, private identifiers, and unsupported claims.
 
-## Update guidance
+## Open work
 
-1. Check the current repository and relevant public artifacts before changing documentation.
-2. Describe behavior at a public, user-facing level. Avoid publishing internal workflow topology, private identifiers, credential details, personal data, or private links.
-3. Distinguish configured behavior from sanitized examples and state what was actually verified.
-4. Do not claim workflow imports, generated-presentation runs, or other checks unless they were performed on the documented version.
-5. Keep changes limited to the documentation that needs to stay aligned with current public artifacts.
-
-## Update log
-
-- 2026-11-06 — documented the verified production missing-insights → reload path, including branch outcomes and stage/logging results, in commit `94d35e3`; portable-export import validation remains open.
-
-- 2026-11-06 — redacted public documentation, documented the 41-node published runtime versus the 33-node portable export in commit `74fc388`, and recorded cache-hit and pinned generated-branch verification with its limits.
-- 2026-11-06 — documented a successful real new-presentation production run after the serial logger fix, including successful stage logging and stale-run protection, in commit `7aa56e4`.
-- 2026-11-06 — clarified the portable export/runtime difference and the completed metadata-only Supabase audit boundary.
+- Reconcile the credential-free workflow exports with current published workflow snapshots.
+- Recheck Supabase schema/permissions and Metabase dashboard SQL/visual behavior.
+- Confirm the live logger workbook schema and run the logger only against an approved test destination.
+- Review licensing and redistribution rights for the public repository and any presentation assets.

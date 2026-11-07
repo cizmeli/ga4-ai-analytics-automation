@@ -1,5 +1,4 @@
 {
-  "id": "673046ac-4e52-4e6f-a9ec-8959602b555d",
   "name": "GA4 - Weekly AI Insights",
   "nodes": [
     {
@@ -10,7 +9,7 @@
         -32,
         160
       ],
-      "id": "700ff19d-053b-463b-8b3b-0c3b51ed093b",
+      "id": "84243cb6-84ac-4c9a-8f98-74c6f1c66f1b",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -27,7 +26,7 @@
         192,
         256
       ],
-      "id": "75761a91-358d-468d-838d-348df4a9318d",
+      "id": "60235841-c49b-406b-af06-ab2899bd7c0d",
       "name": "Get Weekly Comparison"
     },
     {
@@ -42,7 +41,7 @@
         864,
         0
       ],
-      "id": "53b0d133-bb47-4c47-8d47-be4799cfbf47",
+      "id": "8b679c56-f0f9-48d3-9185-8eafa63996b3",
       "name": "Generate Weekly Insights"
     },
     {
@@ -60,7 +59,7 @@
         944,
         224
       ],
-      "id": "c34f9f93-cf22-4022-8122-d222fe2fd322",
+      "id": "4a6e652d-9c4c-4642-9a35-1598d6735990",
       "name": "OpenRouter Chat Model"
     },
     {
@@ -77,7 +76,7 @@
         1216,
         112
       ],
-      "id": "6186efc7-a872-4972-8272-a37270aba472",
+      "id": "d17d0671-179c-4902-aeb9-c286be505aa4",
       "name": "Save Weekly Insights"
     },
     {
@@ -96,7 +95,7 @@
         -32,
         352
       ],
-      "id": "ac83f903-fb19-4c19-8d19-fe19dedfff19",
+      "id": "94071a68-6673-432f-8445-23fc8bd1d551",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -113,7 +112,7 @@
         416,
         256
       ],
-      "id": "0580014f-af06-4006-8906-aa069fb3ab06",
+      "id": "30a51213-bbe2-46a9-859b-303747f178a7",
       "name": "Check Report Needs Generation"
     },
     {
@@ -147,7 +146,7 @@
         640,
         256
       ],
-      "id": "5dcddd17-e942-4a42-8342-e4424b3be542",
+      "id": "16d7a0b4-3add-4d93-bee7-b2c0f9c6b5a6",
       "name": "Needs AI Generation?"
     },
     {
@@ -188,7 +187,7 @@
         928,
         400
       ],
-      "id": "fffdd2d4-2793-4693-8193-209303102393",
+      "id": "d4cbf8a6-719d-4e4d-b260-a5c202a2cd98",
       "name": "Return Saved Insights"
     },
     {
@@ -229,11 +228,11 @@
         1440,
         112
       ],
-      "id": "3fdb6f35-041d-451d-8a1d-0b1d4645081d",
+      "id": "a6bf6e35-84c5-478d-855e-d969bcb8b44b",
       "name": "Return Generated Insights"
     },
     {
-      "id": "a4446bea-46ff-45ff-8cff-4bff6d0a4aff",
+      "id": "1c3d2ee8-e464-4ec0-b53b-1c009254bdba",
       "name": "Weekly KPI Comparison Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -267,7 +266,7 @@
       }
     },
     {
-      "id": "5396a6bc-dd6f-4c6f-876f-d66fe2f8d96f",
+      "id": "e3065987-70e1-4027-a255-e3c9b046ec6e",
       "name": "Return Missing KPI",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -297,7 +296,7 @@
       }
     },
     {
-      "id": "0112a28d-0987-4a87-8f87-1087161d0d87",
+      "id": "adb2caf6-2d8a-454e-a0e5-09690d9a3473",
       "name": "Step 30 Log Insights 01 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -538,7 +537,7 @@
       "retryOnFail": false
     },
     {
-      "id": "a42eb607-803e-413e-8a3e-7b3e0a6b7c3e",
+      "id": "94f1477f-1a45-4a68-98fb-db75d04c1da7",
       "name": "Step 30 Log Insights 02 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -779,7 +778,7 @@
       "retryOnFail": false
     },
     {
-      "id": "27c145ff-7f48-4048-8948-7a4848237b48",
+      "id": "d0ddb05f-80b9-42d8-a700-212fc70011b5",
       "name": "Step 30 Log Insights 03 primary KPI comparison fetch",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1020,7 +1019,7 @@
       "retryOnFail": false
     },
     {
-      "id": "3749f0da-601b-4f1b-861b-651bedba641b",
+      "id": "06d466cb-586a-4a8d-ba9b-1ee3a7e625ee",
       "name": "Step 30 Log Insights 04 weekly comparison availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1261,7 +1260,7 @@
       "retryOnFail": false
     },
     {
-      "id": "960e7378-b99c-489c-8b9c-ba9c80acbd9c",
+      "id": "7f0579f0-f564-4f3b-9989-1ba89d6a67d2",
       "name": "Step 30 Log Insights 05 weekly comparison availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1502,7 +1501,7 @@
       "retryOnFail": false
     },
     {
-      "id": "9906d0bf-2e6e-4f6e-886e-296e7a632a6e",
+      "id": "9d2be8f5-b4dd-4666-b433-74920387a0a0",
       "name": "Step 30 Log Insights 06 report freshness/generation gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1743,7 +1742,7 @@
       "retryOnFail": false
     },
     {
-      "id": "aed21c39-87c5-48c5-85c5-86c54ed183c5",
+      "id": "349e4d05-a785-427f-bc32-c12f08e57d39",
       "name": "Step 30 Log Insights 07 report freshness/generation gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1984,7 +1983,7 @@
       "retryOnFail": false
     },
     {
-      "id": "b8143543-ee79-4f79-8079-f179de9ff279",
+      "id": "9144b6e0-7393-47dd-8e71-620fe66581bc",
       "name": "Step 30 Log Insights 08 AI model generation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2225,7 +2224,7 @@
       "retryOnFail": false
     },
     {
-      "id": "84b5e58b-7b5c-4c5c-8d5c-7e5cb2a77f5c",
+      "id": "2d7aa1e2-5a11-48e4-a688-100fc4b623c1",
       "name": "Step 30 Log Insights 09 insights persistence",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2466,7 +2465,7 @@
       "retryOnFail": false
     },
     {
-      "id": "2b3c915c-382b-472b-822b-312b9418342b",
+      "id": "29395809-a010-42b6-b677-a9cd805ad7b1",
       "name": "Step 30 Log Insights 10 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2707,7 +2706,7 @@
       "retryOnFail": false
     },
     {
-      "id": "3d14ef6a-5a30-4930-8030-5f305c8a5e30",
+      "id": "c2416289-6d7d-4c3e-b80d-c6e33903fe35",
       "name": "Step 30 Log Insights 11 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2948,7 +2947,7 @@
       "retryOnFail": false
     },
     {
-      "id": "5d81f9b0-b264-4164-8464-b364d8e4b664",
+      "id": "eb94a8bd-f5e6-4408-9f67-4f5019b560b3",
       "name": "Step 30 Log Insights 12 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
