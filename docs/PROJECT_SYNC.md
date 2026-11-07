@@ -5,7 +5,7 @@ This file is the continuation point for this repository. Refresh it when content
 ## Repository
 
 - GitHub repository: [`cizmeli/ga4-ai-analytics-automation`](https://github.com/cizmeli/ga4-ai-analytics-automation)
-- Visibility recorded as private; do not change it without explicit authorization.
+- GitHub metadata confirms the repository is public (checked 2026-11-07).
 - Project artifacts are written in English; conversation with the owner may be Turkish.
 
 ## Project purpose
@@ -16,8 +16,8 @@ Reporting intervals start on Sunday, span seven days, and end with a one-day par
 
 ## Current evidence
 
-- Checked-in workflow exports are sanitized but do not match every later captured workflow snapshot. See the four files under `workflows/docs/` for per-workflow scope and differences.
-- Isolated import evidence dated 2026-11-06 records four successfully imported, inactive workflows and no executions.
+- The four checked-in workflow exports are inactive, omit workflow-level IDs, and use regenerated node UUIDs. The 33-node Presentation Generator export differs from its documented 41-node published runtime; see `workflows/docs/` for each export's scope.
+- Isolated import evidence dated 2026-11-06 records four imported inactive workflows and no executions; it predates the current export node UUID regeneration.
 - Assistant test evidence dated 2026-11-07 records 10/10 clean-round test cases passing; this does not establish that all workflow branches were tested.
 - Live spreadsheet inspection confirms five log workbook tabs: `Runs`, `Stage Log`, `KPI Values`, `Evaluations`, and `Changes & Backups`. See [the verified header inventory](GA4_PROJECT_LOG_SCHEMA.md). The workflow and workbook binding are intentionally not exported here.
 - Dashboard notes exist, but its observed period differs from the latest chat evidence. Reinspect the live dashboard before describing it as current.
@@ -27,7 +27,7 @@ Reporting intervals start on Sunday, span seven days, and end with a one-day par
 
 1. Treat `sources/` as read-only project reference material.
 2. For actual workflow behavior, inspect the current workflow instance or exact export snapshot and clearly identify which one supports each claim.
-3. Keep credentials, private workflow IDs, workbook IDs, personal data, and unredacted execution payloads out of this repository.
+3. Keep credentials, instance-specific workflow and workbook IDs, personal data, and unredacted execution payloads out of this public repository.
 4. Do not claim active scheduling, current dashboard accuracy, validated database grants/RLS, or complete workflow QA without direct evidence.
 5. Keep any workflow create/update/delete/activation/execution behind explicit user approval. Documentation and read-only review do not authorize workflow changes.
 6. Before publishing or committing, inspect changed files for secrets, private identifiers, and unsupported claims.
@@ -37,4 +37,4 @@ Reporting intervals start on Sunday, span seven days, and end with a one-day par
 - Reconcile the credential-free workflow exports with current published workflow snapshots.
 - Recheck Supabase schema/permissions and Metabase dashboard SQL/visual behavior.
 - Confirm the live logger workbook schema and run the logger only against an approved test destination.
-- Verify licenses before making the repository public or redistributing templates.
+- Review licensing and redistribution rights for the public repository and any presentation assets.
