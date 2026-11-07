@@ -15,6 +15,6 @@
 2. Audit Metabase datasource, questions, dashboard filters, chart calculations, and data range.
 3. If the project adds a new data period, test ETL date boundaries, empty-week behavior, validation, and idempotency in a disposable setup.
 4. Keep the selected-complete-week on-demand insights path and the inactive ETL schedule documented separately.
-5. Review the unpublished Step 32 v6 purchase-user comparison draft before deciding whether to publish it.
+5. Retain the 2026-11-05 no-write evaluation evidence for the v6 purchase-user comparison; the evaluated query was subsequently published in the active workflow.
 6. Add device KPIs only after defining and validating their grain and schema.
 7. Confirm redistribution rights before adding a license, screenshots, or other assets.
