@@ -1,47 +1,36 @@
 # Project status
 
-Snapshot: 2026-11-06 (Europe/Berlin). This records the current n8n workflow state and the verification performed after serialized logging was introduced. It is not a production audit.
+Snapshot assembled 2026-11-07 (Europe/Berlin) from the checked-in exports, captured workflow backups, isolated import record, local dashboard note, and assistant test evidence. This is not a production audit.
 
-## Verified workflow state
+## Verified evidence
 
-- GA4 Weekly ETL is inactive and has no published active version. Its schedule trigger is deactivated. All available historical sample data through 2021-01-31 is loaded, so no schedule is needed.
-- GA4 - Weekly AI Insights is published and active with a 24-node published graph using the v6 comparison query and prompt. Its query includes purchase_users and prev_purchase_users. It accepts a selected complete week or defaults to the latest eligible pair, requires the immediately preceding complete week, and returns not_found when no eligible comparison exists. It skips LLM generation when the saved week_start and metrics_snapshot match.
-- GA4 - AI Analytics Assistant is published and active with 12 nodes. It has an authenticated chat trigger, OpenRouter model, Simple Memory, three read-only PostgreSQL tools, an on-demand insights tool, and an explicit-request presentation tool.
-- GA4 - Presentation Generator is published and active. The 33-node sanitized portable export differs from the 41-node published runtime: it omits seven presentation-recovery nodes and the final (16th) logger call.
-- GA4 Project Log Writer is published and active with 9 nodes, including the Has KPI Rows? branch and Return Logger Completion node. It sanitizes incoming logging payloads and upserts run, stage, and aggregate KPI summaries to a configured Google Sheets destination. Logger calls in the active Presentation workflow wait for the Log Writer and continue if logging fails. The assistant, insights, presentation, and current ETL graphs have logging calls. Its portable export is intentionally not included in this public repository.
-- GA4 Temporary Read-only Permission Check is inactive and temporary; it is not part of the product workflow exports.
-- A local Metabase dashboard is available. Its chart definitions, SQL, filters, refresh behavior, and datasource permissions were not audited.
+- The checked-in exports cover Weekly ETL, Weekly AI Insights, AI Analytics Assistant, and Presentation Generator. They are credential-free, but some are older or structurally different from later captured workflow snapshots.
+- The 2026-11-06 isolated n8n import test successfully imported four sanitized workflow files in n8n 2.29.9. All imported workflows were inactive; none were executed. It verifies structure only.
+- The assistant's clean second-round chat evidence records 10 of 10 test cases passing on 2026-11-07, including KPI retrieval, trend reporting, correct refusal to sum weekly distinct users, device-data limitation, saved insights retrieval, and cached presentation reuse.
+- Live spreadsheet metadata and header reads confirm five tabs: `Runs`, `Stage Log`, `KPI Values`, `Evaluations`, and `Changes & Backups`. Their exact header lists are in [the log schema inventory](GA4_PROJECT_LOG_SCHEMA.md). The helper export and workbook binding are not part of the repository.
+- A local Metabase dashboard and one SQL/banner note are recorded. The note says Jan 17–23, while later assistant evidence says Jan 24–30; the live dashboard needs inspection before its currentness is claimed.
 
-## Step 32 evaluation and published v6
+## Workflow state and snapshot caveats
 
-The published 24-node Weekly Insights version uses the v6 query and prompt; its comparison output includes purchase_users and prev_purchase_users. The separate [ga4-weekly-insights-v6-draft.sql](../sql/ga4-weekly-insights-v6-draft.sql) file remains a reference artifact, while the sanitized JSON export matches the published v6 logic.
+| Workflow | Last recorded state | Caveat |
+|---|---|---|
+| `GA4 Weekly ETL` | Inactive; schedule deactivated in the repository export | Export has 5 nodes; isolated import evidence refers to a distinct 10-node revision. |
+| `GA4 - Weekly AI Insights` | Repository export inactive | Export has 7 nodes; later captured snapshot has 24 nodes and additional return/log branches. |
+| `GA4 - AI Analytics Assistant` | Published and active when observed 2026-10-25 | Repository export has 8 nodes; isolated import evidence refers to a different 12-node version. Nov 7 test covers documented chat cases, not all tool branches. |
+| `GA4 - Presentation Generator` | Published and active when observed 2026-10-25; PowerPoint export node deactivated | Repository export has 12 nodes; later captured snapshot has 41 nodes. Chat evidence tested cached reuse, not all generation/recovery paths. |
 
-The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned test data. Logging returned no_write/test_only, and the retest did not persist workflow output. This is evaluation evidence for the query and prompt logic, not a runtime test of the published workflow.
+## Open verification work
 
-## Runtime and logging verification
+- Inspect the current published workflows and reconcile them with checked-in exports before distributing or importing those exports as current.
+- Verify all current export imports in an isolated n8n version and exercise only in a disposable environment with explicit approved test credentials.
+- Verify actual Supabase schema, grants, RLS, and least-privilege roles for the three documented tables.
+- Audit Metabase questions, SQL, charts, filters, date range, live refresh, and datasource role.
+- Confirm current log workbook headers and logger helper contract before connecting any workflow.
+- Confirm licensing and redistribution rights before publishing the repository or presentation assets.
 
-- On 2026-11-06, a real production run of the published Assistant → Presentation Generator → Log Writer flow succeeded and created a new Slides deck for the reporting week 2020-12-27 through 2021-01-02; it did not reuse a cached deck.
-- All nine Presentation stages succeeded. Nineteen Log Writer executions in the run window succeeded without retries, and the logger helper remains active.
-- The Assistant final-response row succeeded with `runStatus=succeeded` and `updateRunRow=true`. The later `chat-trigger-start` row had `updateRunRow=false`, skipped Upsert Run Row, and did not overwrite the completed run with stale-start data.
-- The same production run also exercised the missing-insights then reload path: `Weekly Report Found?` took its no-result branch, `Generate Missing Weekly Insights` succeeded, `Reload Presentation Data` ran, and `Reloaded Weekly Report Found?` took its found branch. Presentation stages 06 and 07 succeeded.
+## Not established
 
-Existing history includes insights reports and cached returns for eligible complete weeks. Existing presentation fault-injection cases stopped before save when a copied file ID was missing or a fake Slides ID returned 404; these were expected negative tests, not evidence of a provider outage. Existing assistant history includes insights-only requests that did not invoke the presentation workflow.
-
-## Saved draft and published logging state
-
-Checked against n8n on 2026-11-06:
-
-- In the active Presentation workflow, logger calls wait for the Log Writer; a logger error does not stop the parent workflow. A failed call can leave its log entry missing.
-- The active published Assistant workflow and its current saved draft both contain three assistant logging stages.
-
-The active published versions remain the runtime reference.
-
-## Known gaps
-
-- No sanitized workflow export has been re-imported into a disposable n8n instance during this review.
-- The metadata-only Supabase audit completed catalog checks of constraints, effective schema/table/column grants, and RLS flags and policies for the three target public tables; it did not read business rows. Business-row validation and data-level policy behavior were not tested.
-- Metabase question accuracy and dashboard data quality have not been audited.
-- The ETL schedule is not running; the historical sample is fully loaded.
-- Device-level analysis is not available in the current assistant tool set.
-- Weekly comparisons are limited to complete weeks and the available historical sample.
-- No API keys, passwords, OAuth tokens, credential contents, live personal data, or execution payloads belong in this repository.
+- The Weekly ETL schedule is running automatically.
+- Dashboard calculations and visual layout have been fully audited.
+- Every report-generation, failure, cache-recovery, and logging branch has been tested.
+- Database grants/RLS or production-grade import/runtime readiness have been validated.
