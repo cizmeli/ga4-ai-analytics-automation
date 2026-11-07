@@ -1,5 +1,4 @@
 {
-  "id": "ca956d17-f63d-40f2-ba99-f4644788b1a2",
   "name": "GA4 - Presentation Generator",
   "nodes": [
     {
@@ -10,7 +9,7 @@
         -16,
         -176
       ],
-      "id": "879f5c8d-01d1-458e-8bb0-ce1cec7750a2",
+      "id": "e6dac270-fdbf-4b45-9fde-27651f83f1fd",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -27,7 +26,7 @@
         208,
         -272
       ],
-      "id": "51341189-03d1-40b9-82ac-65b9ab281385",
+      "id": "6fb0cb3e-41b8-46cf-9f4f-870556ee061d",
       "name": "Get Presentation Data"
     },
     {
@@ -47,7 +46,7 @@
         1776,
         -272
       ],
-      "id": "428f6686-14d0-46e4-8788-d7bd41061c2e",
+      "id": "6447b7d5-b349-4553-9e28-fc0773fb4e65",
       "name": "Copy Presentation Template"
     },
     {
@@ -60,7 +59,7 @@
         2000,
         -272
       ],
-      "id": "52df18e0-1ba3-43f8-8c7d-e514c4845b70",
+      "id": "47a4a83a-5986-491a-aded-a4f424f483da",
       "name": "Prepare Presentation Fields"
     },
     {
@@ -80,7 +79,7 @@
         2224,
         -272
       ],
-      "id": "f214f573-cb23-4262-a928-6b7676583467",
+      "id": "a38d11a0-8843-4b72-9a93-dd6ac1086c36",
       "name": "Fill Presentation Placeholders"
     },
     {
@@ -105,7 +104,7 @@
         -16,
         144
       ],
-      "id": "15c40d86-5819-41bc-b25b-500c3c17a55e",
+      "id": "b5de708c-089d-4c9f-8abe-8ac44471395d",
       "name": "Export PowerPoint",
       "disabled": true
     },
@@ -125,7 +124,7 @@
         -16,
         -368
       ],
-      "id": "82fe8c06-984d-4356-a994-a6f8cf0793a3",
+      "id": "14f7b877-7ca4-47ea-a5b6-441ffc75f215",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -142,7 +141,7 @@
         1328,
         -176
       ],
-      "id": "7bd79a5e-da9e-43c8-9b56-a9f6b6269c07",
+      "id": "17b196b2-eb09-4193-9ff6-0e08dbbd628d",
       "name": "Check Existing Presentation"
     },
     {
@@ -176,7 +175,7 @@
         1552,
         -176
       ],
-      "id": "5734e5d3-5a11-4191-b9c6-0dfe2cb0f376",
+      "id": "d2fba6f2-6760-4996-abaa-48414c249f5b",
       "name": "Presentation Needs Generation?"
     },
     {
@@ -193,7 +192,7 @@
         2448,
         -272
       ],
-      "id": "06c60e6f-964e-499f-a8d8-e846fa4a81af",
+      "id": "03a6b2a6-019f-4f66-9cac-97148c092243",
       "name": "Save Presentation Record"
     },
     {
@@ -221,7 +220,7 @@
         },
         "options": {}
       },
-      "id": "ed7255a0-1936-4c50-a668-3b8d584f6857",
+      "id": "3f015c57-1c57-442d-980f-ff2f5dbe3d85",
       "name": "Weekly Report Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -250,7 +249,7 @@
         },
         "options": {}
       },
-      "id": "9d798d4e-58a2-41f8-9b11-c82ddcb3f066",
+      "id": "7e1d9172-1b8d-4478-80ef-a98a415dddbf",
       "name": "Return Missing Report",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -292,7 +291,7 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "4b7afa9e-9777-4216-bcd8-b933ebaed28d",
+      "id": "77aa3ad5-b310-4f66-8533-67ee1a64db79",
       "name": "Generate Missing Weekly Insights",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -309,7 +308,7 @@
           "queryReplacement": "={{ [ $('Get Presentation Data').first().json.requested_week || '' ] }}"
         }
       },
-      "id": "459f385c-b0e1-4454-8cfd-fe730a705a5e",
+      "id": "5dd1f419-e087-4368-a658-8f77ca39226f",
       "name": "Reload Presentation Data",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
@@ -343,7 +342,7 @@
         },
         "options": {}
       },
-      "id": "d79971c4-49f0-49f3-b990-2b174bb78739",
+      "id": "bd855e38-1168-441a-bbf4-3264d4644415",
       "name": "Reloaded Weekly Report Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
@@ -353,7 +352,7 @@
       ]
     },
     {
-      "id": "6ffcc507-f94c-4099-9639-b001a0e6d1af",
+      "id": "c2290ab5-46f4-45eb-8545-6d5eda203d75",
       "name": "Step 30 Log Presentation 01 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -594,7 +593,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "662aa4b4-5b5b-42a2-a8b5-504e38782d8b",
+      "id": "a1224466-f6e6-4ecd-951f-ede2f0f4c366",
       "name": "Step 30 Log Presentation 02 trigger/start",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -835,7 +834,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "f7ac0b76-6f0f-4a8b-8c0b-9e62560681d9",
+      "id": "54835355-65c6-49ba-8f84-02fa26715c74",
       "name": "Step 30 Log Presentation 03 primary report fetch",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1076,7 +1075,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "8997e85b-d9c4-41a0-9a97-d259e3d94b40",
+      "id": "95fed7fa-42ce-4f8a-b006-6d48342f176d",
       "name": "Step 30 Log Presentation 04 weekly report availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1317,7 +1316,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "323eef37-00be-4bb1-9be3-0eddc416a0f4",
+      "id": "48dbabe9-3a48-4d8f-92e3-652e45d07026",
       "name": "Step 30 Log Presentation 05 weekly report availability gate",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1558,7 +1557,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "0fe09a61-50d8-4622-9e9b-f2512fc332e6",
+      "id": "11f55014-cb1d-4f54-8a57-0639271cc90b",
       "name": "Step 30 Log Presentation 06 missing insights generation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -1799,7 +1798,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "e408d277-6634-46d7-ad35-a4e64f907d4a",
+      "id": "44e3d18b-bc9f-4f78-b13f-7772004ddcf8",
       "name": "Step 30 Log Presentation 07 reload and availability check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2040,7 +2039,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "b7afb5a0-b906-4522-a661-b8fbe8963a24",
+      "id": "eaa0f890-9be5-4416-85fb-b4bb4b3843be",
       "name": "Step 30 Log Presentation 08 reload and availability check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2281,7 +2280,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "7b1d7d39-3638-4525-8994-18ead9401b2c",
+      "id": "158d6098-a717-4ea0-89e2-5cb8f86aa09f",
       "name": "Step 30 Log Presentation 09 presentation existence check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2522,7 +2521,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "ada907d6-c472-4a3c-8817-fc1f43274030",
+      "id": "1b1b7ed5-bc52-44d4-8169-505a3f69e95b",
       "name": "Step 30 Log Presentation 10 presentation existence check",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -2763,7 +2762,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "ed0a2a27-505d-4d13-9ceb-0813646e9972",
+      "id": "a646a30c-8888-4447-96fe-e1fbecebd0b2",
       "name": "Step 30 Log Presentation 11 document generation",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3004,7 +3003,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "dd5a3ef5-9f7f-43e3-8b92-e57e192930d3",
+      "id": "3c71b76e-83fb-4e93-9b0d-cf76e673b3c5",
       "name": "Step 30 Log Presentation 12 external persistence/export",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3245,7 +3244,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "45f77d61-b179-4aea-84cd-b3887f0ef7f9",
+      "id": "f89902b7-dccc-40f2-9458-2cfaf45fe088",
       "name": "Step 30 Log Presentation 13 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3486,7 +3485,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "463d5359-9063-4936-8002-4cf5eddc3f1f",
+      "id": "79e32bf4-063f-4023-851e-6452b5c15eff",
       "name": "Step 30 Log Presentation 14 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3727,7 +3726,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "b8449630-5ee0-4382-b344-5a5eaf9d4e9b",
+      "id": "b191f2e4-9396-46fb-aa9e-c894b6509b04",
       "name": "Step 30 Log Presentation 15 final return",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
@@ -3968,7 +3967,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "21862483-501f-4179-9ce5-3ac475477c06",
+      "id": "2374dae4-1d08-48e4-a7d2-05c99383d649",
       "name": "Return Tool Result - generated",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -4003,7 +4002,7 @@
       }
     },
     {
-      "id": "a51aee5d-c32a-4362-991c-3d896ef74662",
+      "id": "e3c1ec62-436d-43eb-9775-59247d28adf2",
       "name": "Return Tool Result - reused",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -4038,7 +4037,7 @@
       }
     },
     {
-      "id": "ed959875-0c83-4a48-b7cd-54957ad69c6d",
+      "id": "60ac1556-cc0b-4c85-b8fc-f0132fac54e1",
       "name": "Return Tool Result - not found",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
