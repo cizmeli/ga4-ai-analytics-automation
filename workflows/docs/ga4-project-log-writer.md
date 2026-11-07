@@ -1,6 +1,6 @@
 # GA4 Project Log Writer
 
-**Observed state:** published active shared helper, 9 nodes. Four GA4 workflows invoke it through logging nodes. **GA4 - AI Analytics Assistant** uses `Log Assistant Run Start`, `Log Assistant Agent Stage`, and `Log Assistant Run Completion`; the other three use `Step 30` logging nodes.
+**Observed state:** published active shared helper, 9 nodes. Four GA4 workflows invoke it through named logging nodes: the Assistant has 3, Weekly AI Insights has 12, Presentation Generator has 16, and the inactive ETL has 5. In total, the current exports contain 36 logger calls. Each workflow document lists its exact logger names.
 
 ## Serial node order and purpose
 
