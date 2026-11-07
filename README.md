@@ -25,13 +25,13 @@ flowchart LR
 | Component | Evidence-based description |
 |---|---|
 | Weekly ETL | Repository export is inactive; schedule is deactivated. It gets the next historical block, queries BigQuery, upserts `weekly_kpis`, then calls Weekly AI Insights. |
-| Weekly AI Insights | Repository export compares the latest consecutive complete weeks, skips an unchanged metrics snapshot, generates a bounded report, and upserts `weekly_insights`. A later captured snapshot has explicit return and logging branches. |
-| AI Analytics Assistant | Published and active when observed on 2026-11-06. The Nov 7 clean chat round passed 10/10 documented cases. |
-| Presentation Generator | Published and active in the latest recorded runtime evidence (2026-11-06). A Nov 7 chat case returned a cached Slides link; template-generation and recovery paths were not covered by that round. |
+| Weekly AI Insights | The current published graph has 24 nodes, including 12 meaningful logger nodes; its inactive portable export reflects the same graph. It compares eligible consecutive complete weeks, reuses unchanged snapshots, generates bounded reports, and upserts `weekly_insights`. |
+| AI Analytics Assistant | The current published graph has 12 nodes, including three named logger nodes. The Nov 7 clean chat round passed 10/10 documented cases. |
+| Presentation Generator | The current published graph and inactive portable export each have 41 nodes, including seven presentation-recovery nodes and 16 named logger nodes. The Nov 7 chat case returned a cached Slides link; generation and recovery paths were not covered by that chat round. |
 | Project Log Writer | The live log workbook has five verified tabs: `Runs`, `Stage Log`, `KPI Values`, `Evaluations`, and `Changes & Backups`. Exact headers are documented in [the schema inventory](docs/GA4_PROJECT_LOG_SCHEMA.md). Its portable workflow and workbook binding are not included. |
 | Metabase | Dashboard name and local URL are recorded. Its current charts, filters, query accuracy, and datasource permissions have not been audited. |
 
-All four checked-in workflow exports are inactive and omit workflow-level IDs; node UUIDs are regenerated for portable imports. The 10-node ETL export is an inactive configuration, the 24-node Weekly AI Insights and 12-node Assistant exports match their documented snapshots, and the 33-node Presentation Generator export differs from its 41-node published runtime. See each [workflow document](workflows/docs/ga4-weekly-etl.md) and [project status](docs/STATUS.md) before importing or relying on node-level behavior.
+All four checked-in workflow exports are inactive, omit live workflow IDs and credential bindings, replace instance-specific references with placeholders, and use regenerated node UUIDs. Their node counts match the verified n8n graphs captured on 2026-11-07: ETL 10 (5 logger nodes), Weekly AI Insights 24 (12), Assistant 12 (3), and Presentation Generator 41 (16). The ETL schedule remains disabled. See the [workflow documents](workflows/docs/) and [project status](docs/STATUS.md) for scope and verification limits.
 
 ## Repository map
 
@@ -61,7 +61,7 @@ Reporting blocks are consecutive Sunday–Saturday intervals starting on 2020-11
 1. Read [setup](docs/SETUP.md), [example schema](sql/schema.sql), [security notes](docs/SECURITY.md), and [project status](docs/STATUS.md).
 2. Inspect the target database before applying example DDL. Configure credentials only in local n8n credential storage.
 3. Import one sanitized export at a time into a disposable or test instance, then reconnect credentials and instance-specific workflow references.
-4. Keep schedules off until manual tests and database writes have been reviewed. Do not assume a repository export has the same nodes as the currently published workflow.
+4. Keep schedules off until manual tests and database writes have been reviewed. The exports represent the captured graph structure but remain inactive, sanitized starting points.
 5. Configure a least-privilege read-only PostgreSQL role for Metabase and the assistant.
 
 The workflow exports contain no API secrets or credential values. They are reference starting points, not turnkey deployments.
