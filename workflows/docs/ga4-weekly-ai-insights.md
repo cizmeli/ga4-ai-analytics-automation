@@ -29,9 +29,9 @@ The published v6 comparison output includes both purchase_users and prev_purchas
 
 The published graph has 12 logging calls to the shared Project Log Writer: two trigger/start nodes; comparison fetch; both comparison-availability branches; both report-generation decision branches; model generation; persistence; and three return branches. They log stage summaries and do not replace report persistence.
 
-## Step 32 evaluation and published v6
+## 2026-11-05 evaluation and published v6
 
-The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned test data; logging returned no_write/test_only and the retest did not persist workflow output. The evaluated query and v6 prompt were subsequently published in the 24-node active workflow. This records evaluation evidence for the logic, not a new execution of the published workflow.
+The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned test data; logging returned no_write/test_only and the retest did not persist workflow output. The evaluated query and v6 prompt were subsequently published in the 24-node active workflow. This records evaluation evidence for the logic, not a new execution of the published workflow. The standalone SQL reference at [ga4-weekly-insights-v6-reference.sql](../../sql/ga4-weekly-insights-v6-reference.sql) matches the query embedded in the export after comments and whitespace normalization; the JSON export remains the portable runtime artifact and source of truth. Runtime was not re-tested during this documentation update.
 
 ## Limitations and safe operation
 
