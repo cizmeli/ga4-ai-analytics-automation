@@ -32,11 +32,11 @@ flowchart LR
   N --> B[BigQuery: Weekly KPIs]
   B --> U[Supabase: Upsert KPIs]
   U --> I[Trigger Weekly AI Insights]
-  S -.-> L1[Step 30 Log ETL 01]
-  N -.-> L2[Step 30 Log ETL 02]
-  B -.-> L3[Step 30 Log ETL 03]
-  U -.-> L4[Step 30 Log ETL 04]
-  I -.-> L5[Step 30 Log ETL 05]
+  S -.-> L1[Step 30 Log ETL 01 trigger/start]
+  N -.-> L2[Step 30 Log ETL 02 weekly window fetch]
+  B -.-> L3[Step 30 Log ETL 03 aggregate KPI computation]
+  U -.-> L4[Step 30 Log ETL 04 KPI persistence]
+  I -.-> L5[Step 30 Log ETL 05 weekly insights handoff]
   L1 --> LOG[GA4 Project Log Writer]
   L2 --> LOG
   L3 --> LOG
