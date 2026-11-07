@@ -11,9 +11,9 @@
       "typeVersion": 2.6,
       "position": [
         -112,
-        -32
+        256
       ],
-      "id": "d0473a7d-696f-4d04-88bf-04ea0c297421",
+      "id": "606f6cb2-ea8b-4b20-b36e-bbe21ab16457",
       "name": "Supabase-Get Next Week"
     },
     {
@@ -34,9 +34,9 @@
       "typeVersion": 1.3,
       "position": [
         -336,
-        -32
+        352
       ],
-      "id": "cb1bbb2e-4853-4cc9-87ea-35c929fabce8",
+      "id": "56121beb-ed52-4653-b362-3eb822ebd36d",
       "name": "Schedule Trigger",
       "disabled": true
     },
@@ -54,9 +54,9 @@
       "typeVersion": 2.1,
       "position": [
         112,
-        -32
+        160
       ],
-      "id": "7df4d228-f96c-469a-a287-b16ae39e3231",
+      "id": "77c15636-b0ab-48ee-9c6d-3be5585904c4",
       "name": "BigQuery-Weekly KPIs"
     },
     {
@@ -65,12 +65,14 @@
         "schema": {
           "__rl": true,
           "value": "public",
-          "mode": "list"
+          "mode": "list",
+          "cachedResultName": "public"
         },
         "table": {
           "__rl": true,
           "value": "weekly_kpis",
-          "mode": "list"
+          "mode": "list",
+          "cachedResultName": "weekly_kpis"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
@@ -168,9 +170,9 @@
       "typeVersion": 2.6,
       "position": [
         336,
-        -32
+        64
       ],
-      "id": "fee60cad-4153-4fc9-947a-248fa63354f4",
+      "id": "b0499571-ae68-4f32-9d5e-8b51f6e2da34",
       "name": "Supabase-Upsert KPIs"
     },
     {
@@ -178,7 +180,8 @@
         "workflowId": {
           "__rl": true,
           "value": "SELECT_WORKFLOW_AFTER_IMPORT",
-          "mode": "list"
+          "mode": "list",
+          "cachedResultName": "GA4 - Weekly AI Insights"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -195,29 +198,20 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        544,
+        560,
         -32
       ],
-      "id": "345cf7c3-0afd-4110-b8ce-26e6596045d0",
+      "id": "6ad48445-bae4-462e-98bb-29b7fa33f32b",
       "name": "Trigger Weekly AI Insights"
     },
     {
-      "id": "fcd939c3-bc58-4123-b06a-0890f5ea4bd6",
-      "name": "Step 30 Log ETL 01 trigger/start",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        900,
-        0
-      ],
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -439,26 +433,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "92b337e1-deb5-498c-b8c7-84a3e0284fa5",
-      "name": "Step 30 Log ETL 02 weekly window fetch",
+      "id": "c5e7f377-5b8d-4c68-a636-436cb4555cbe",
+      "name": "Log ETL — Workflow run started",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        900,
-        130
+        -112,
+        448
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -680,26 +673,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "fc31d41e-4a4f-4d04-a327-30d5720c7025",
-      "name": "Step 30 Log ETL 03 aggregate KPI computation",
+      "id": "6ae25c45-d619-4033-a552-02f0b2a4c5f1",
+      "name": "Log ETL — Next weekly window loaded",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        900,
-        260
+        112,
+        352
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -921,26 +913,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "c6823d95-bfac-4e2b-bd70-473335453e6d",
-      "name": "Step 30 Log ETL 04 KPI persistence",
+      "id": "b3ce58cb-47be-4b33-8bd1-a06c95430424",
+      "name": "Log ETL — Weekly KPIs aggregated",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        900,
-        390
+        336,
+        256
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1162,26 +1153,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "bfe3b39b-8a18-460b-86c1-101edb85227e",
-      "name": "Step 30 Log ETL 05 weekly insights handoff",
+      "id": "ab72ea62-b1a9-4a9c-8297-958f9004cdae",
+      "name": "Log ETL — Weekly KPIs saved",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        900,
-        520
+        560,
+        160
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1403,8 +1393,16 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "id": "e4731acd-1c45-4c9f-a583-30d9004be9b1",
+      "name": "Log ETL — Insights workflow handoff completed",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        -32
+      ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1417,7 +1415,7 @@
             "index": 0
           },
           {
-            "node": "Step 30 Log ETL 02 weekly window fetch",
+            "node": "Log ETL — Next weekly window loaded",
             "type": "main",
             "index": 0
           }
@@ -1433,7 +1431,7 @@
             "index": 0
           },
           {
-            "node": "Step 30 Log ETL 01 trigger/start",
+            "node": "Log ETL — Workflow run started",
             "type": "main",
             "index": 0
           }
@@ -1449,7 +1447,7 @@
             "index": 0
           },
           {
-            "node": "Step 30 Log ETL 03 aggregate KPI computation",
+            "node": "Log ETL — Weekly KPIs aggregated",
             "type": "main",
             "index": 0
           }
@@ -1465,7 +1463,7 @@
             "index": 0
           },
           {
-            "node": "Step 30 Log ETL 04 KPI persistence",
+            "node": "Log ETL — Weekly KPIs saved",
             "type": "main",
             "index": 0
           }
@@ -1476,7 +1474,7 @@
       "main": [
         [
           {
-            "node": "Step 30 Log ETL 05 weekly insights handoff",
+            "node": "Log ETL — Insights workflow handoff completed",
             "type": "main",
             "index": 0
           }
