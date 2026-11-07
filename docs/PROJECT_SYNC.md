@@ -16,7 +16,7 @@ Reporting intervals start on Sunday, span seven days, and end with a one-day par
 
 ## Current evidence
 
-- The four checked-in workflow exports are inactive, omit workflow-level IDs, and use regenerated node UUIDs. The 33-node Presentation Generator export differs from its documented 41-node published runtime; see `workflows/docs/` for each export's scope.
+- The four checked-in inactive exports now reflect the verified graphs captured on 2026-11-07: ETL 10 nodes, Weekly AI Insights 24, Assistant 12, and Presentation Generator 41. They omit workflow-level IDs and credential bindings, use portable placeholders for instance-specific references, and regenerate node UUIDs.
 - Isolated import evidence dated 2026-11-06 records four imported inactive workflows and no executions; it predates the current export node UUID regeneration.
 - Assistant test evidence dated 2026-11-07 records 10/10 clean-round test cases passing; this does not establish that all workflow branches were tested.
 - Live spreadsheet inspection confirms five log workbook tabs: `Runs`, `Stage Log`, `KPI Values`, `Evaluations`, and `Changes & Backups`. See [the verified header inventory](GA4_PROJECT_LOG_SCHEMA.md). The workflow and workbook binding are intentionally not exported here.
@@ -34,7 +34,7 @@ Reporting intervals start on Sunday, span seven days, and end with a one-day par
 
 ## Open work
 
-- Reconcile the credential-free workflow exports with current published workflow snapshots.
+- Re-import the regenerated portable exports in an isolated n8n environment before relying on them for a deployment.
 - Recheck Supabase schema/permissions and Metabase dashboard SQL/visual behavior.
 - Confirm the live logger workbook schema and run the logger only against an approved test destination.
 - Review licensing and redistribution rights for the public repository and any presentation assets.
