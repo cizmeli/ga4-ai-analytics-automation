@@ -21,12 +21,12 @@
 
 ## Logging setup
 
-The four included workflow exports contain 35 Step 30 calls to the Project Log Writer helper. Every call uses the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder because the helper workflow export is not included in this public repository. Logger calls now continue on error: an unresolved helper can leave a log entry missing, but does not stop the parent workflow.
+The four included workflow exports contain 36 named calls to the Project Log Writer helper: 3 in the Assistant, 12 in Weekly AI Insights, 16 in the Presentation Generator, and 5 in the inactive ETL. The helper workflow export is not included in this public repository. The calls use portable workflow placeholders, and logger errors continue without stopping the parent workflow.
 
 Before running an imported workflow, choose one option:
 
-1. Install and configure your own Project Log Writer helper, then select it in every Step 30 node to replace the `SELECT_WORKFLOW_AFTER_IMPORT` placeholder. Configure its spreadsheet destination and credentials in your own n8n instance.
-2. If you do not want logging, disable or remove every Step 30 call in that imported workflow before running it.
+1. Install and configure your own Project Log Writer helper, then select it in every named logging node to replace its workflow placeholder. Configure its spreadsheet destination and credentials in your own n8n instance.
+2. If you do not want logging, disable or remove the logging nodes in that imported workflow before running it.
 
 Connect your own helper before running if you want log entries. Unresolved references are safe for the main flow, but those log entries will be absent. Verify the references in each imported workflow; the helper calls are independent of the assistant's GA4 data tools.
 
@@ -40,7 +40,7 @@ The ETL export contains the current inactive configuration. It uses week_start a
 
 ## Weekly Insights SQL reference
 
-`sql/ga4-weekly-insights-v6-reference.sql` is a standalone reference copy whose query matches the `Get Weekly Comparison` node embedded in the published 24-node `GA4 - Weekly AI Insights` export after comments and whitespace normalization. The JSON export remains the portable runtime artifact and source of truth. Runtime was not re-tested during this documentation update.
+`sql/ga4-weekly-insights-v6-reference.sql` is a standalone reference copy whose query matches the `Get Weekly Comparison` node embedded in the 24-node `GA4 - Weekly AI Insights` export after comments and whitespace normalization. The JSON export remains the portable runtime artifact and source of truth. Runtime was not re-tested during this documentation update.
 
 The 2026-11-05 no-write evaluation recorded 8/8 hard-gate passes for the v6 comparison. This evaluation did not activate or runtime-certify the workflow.
 
