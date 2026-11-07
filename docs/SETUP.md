@@ -38,9 +38,11 @@ sql/schema.sql is an example of the tables used by the assistant and presentatio
 
 The ETL export contains the current inactive configuration. It uses week_start and week_end returned by Supabase and bounds _TABLE_SUFFIX to the requested interval. The historical sample range is exhausted; test any future range changes in a disposable copy.
 
-## Step 32 draft
+## Weekly Insights SQL reference
 
-sql/ga4-weekly-insights-v6-draft.sql is a read-only, unpublished query draft. It is not part of the published workflow export and must not be treated as the active n8n query.
+`sql/ga4-weekly-insights-v6-reference.sql` is a standalone reference copy whose query matches the `Get Weekly Comparison` node embedded in the published 24-node `GA4 - Weekly AI Insights` export after comments and whitespace normalization. The JSON export remains the portable runtime artifact and source of truth. Runtime was not re-tested during this documentation update.
+
+The 2026-11-05 no-write evaluation recorded 8/8 hard-gate passes for the v6 comparison. This evaluation did not activate or runtime-certify the workflow.
 
 ## Metabase
 
