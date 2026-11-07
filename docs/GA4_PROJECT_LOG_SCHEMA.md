@@ -79,4 +79,4 @@ The live Google Sheet **GA4 Analytics Project Log** was inspected on 2026-11-07.
 
 ## Scope and handling
 
-The helper workflow export and workbook binding are not included in this repository. Keep workbook identifiers and Google Sheets credentials in the connected services. The repository's workflow exports do not consistently include the later logging calls; confirm the exact target workflow version before relying on them.
+The helper workflow export and workbook binding are not included in this repository. Keep workbook identifiers and Google Sheets credentials in the connected services. The four sanitized workflow exports include the named logger calls from the verified graph snapshots captured on 2026-11-07. Confirm that your imported workflows are bound to your own Project Log Writer helper before relying on log entries.
