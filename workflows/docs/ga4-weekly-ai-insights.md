@@ -25,9 +25,22 @@ The sanitized published export is [ga4-weekly-ai-insights.json](../exports/ga4-w
 
 The published v6 comparison output includes both purchase_users and prev_purchase_users, along with current and comparison week boundaries. The Generate Weekly Insights prompt is also versioned as v6. The sanitized export is the portable representation of this published 24-node workflow.
 
-## Step 30 logging nodes
+## Project Log Writer calls
 
-The published graph has 12 logging calls to the shared Project Log Writer: two trigger/start nodes; comparison fetch; both comparison-availability branches; both report-generation decision branches; model generation; persistence; and three return branches. They log stage summaries and do not replace report persistence.
+The published 24-node graph has 12 logging calls. They log stage summaries and do not replace report persistence:
+
+- `Log Insights — Manual run started`
+- `Log Insights — Subworkflow run started`
+- `Log Insights — Weekly KPI comparison loaded`
+- `Log Insights — KPI comparison available`
+- `Log Insights — KPI comparison unavailable`
+- `Log Insights — Report generation required`
+- `Log Insights — Saved report reused`
+- `Log Insights — Weekly report generated`
+- `Log Insights — Weekly report saved`
+- `Log Insights — Generated report returned`
+- `Log Insights — Saved report returned`
+- `Log Insights — KPI data unavailable returned`
 
 ## 2026-11-05 evaluation and published v6
 
@@ -47,25 +60,25 @@ The no-write evaluation returned 8/8 hard-gate passes on 2026-11-05 using pinned
 flowchart LR
   M[Manual Trigger] --> Q[Get Weekly Comparison]
   C[Assistant Called Workflow] --> Q
-  Q -.-> L3[Step 30 Log Insights 03 primary KPI comparison fetch]
+  Q -.-> L3[Log Insights — Weekly KPI comparison loaded]
   Q --> F{Eligible comparison?}
   F -->|no| MK[Return Missing KPI]
-  F -.-> L4[Step 30 Log Insights 04 weekly comparison availability gate]
-  F -.-> L5[Step 30 Log Insights 05 weekly comparison availability gate]
+  F -.-> L4[Log Insights — KPI comparison unavailable]
+  F -.-> L5[Log Insights — KPI comparison available]
   F -->|yes| K[Check Report Needs Generation]
-  K -.-> L6[Step 30 Log Insights 06 report freshness/generation gate]
+  K -.-> L6[Log Insights — Report generation required]
   K --> B{Needs AI Generation?}
   B -->|yes| G[Generate Weekly Insights]
-  G -.-> L8[Step 30 Log Insights 08 AI model generation]
+  G -.-> L8[Log Insights — Weekly report generated]
   G --> S[Save Weekly Insights]
-  S -.-> L9[Step 30 Log Insights 09 insights persistence]
+  S -.-> L9[Log Insights — Weekly report saved]
   S --> R1[Return Generated Insights]
   B -->|no| R2[Return Saved Insights]
-  R1 -.-> L10[Step 30 Log Insights 10 final return]
-  R2 -.-> L11[Step 30 Log Insights 11 final return]
-  MK -.-> L12[Step 30 Log Insights 12 final return]
-  M -.-> L1[Step 30 Log Insights 01 trigger/start]
-  C -.-> L2[Step 30 Log Insights 02 trigger/start]
+  R1 -.-> L10[Log Insights — Generated report returned]
+  R2 -.-> L11[Log Insights — Saved report returned]
+  MK -.-> L12[Log Insights — KPI data unavailable returned]
+  M -.-> L1[Log Insights — Manual run started]
+  C -.-> L2[Log Insights — Subworkflow run started]
   L1 --> LOG[GA4 Project Log Writer]
   L2 --> LOG
   L3 --> LOG
