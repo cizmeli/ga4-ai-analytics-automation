@@ -7,9 +7,9 @@
       "typeVersion": 1,
       "position": [
         -32,
-        160
+        816
       ],
-      "id": "84243cb6-84ac-4c9a-8f98-74c6f1c66f1b",
+      "id": "0d07797f-22e3-4118-b304-192408f3882f",
       "name": "When clicking ‘Execute workflow’"
     },
     {
@@ -24,9 +24,9 @@
       "typeVersion": 2.6,
       "position": [
         192,
-        256
+        960
       ],
-      "id": "60235841-c49b-406b-af06-ab2899bd7c0d",
+      "id": "88b8b38d-53ee-42e1-ad4f-373d1db5e3e1",
       "name": "Get Weekly Comparison"
     },
     {
@@ -38,10 +38,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        864,
-        0
+        1088,
+        96
       ],
-      "id": "8b679c56-f0f9-48d3-9185-8eafa63996b3",
+      "id": "03e70f68-afa1-43bf-a3f4-fe3a72387227",
       "name": "Generate Weekly Insights"
     },
     {
@@ -56,10 +56,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        944,
-        224
+        1168,
+        320
       ],
-      "id": "4a6e652d-9c4c-4642-9a35-1598d6735990",
+      "id": "2a2a60e6-bc8a-40d5-b307-9775bda44220",
       "name": "OpenRouter Chat Model"
     },
     {
@@ -73,10 +73,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1216,
-        112
+        1440,
+        96
       ],
-      "id": "d17d0671-179c-4902-aeb9-c286be505aa4",
+      "id": "d0a1381d-fb9a-4d49-9b57-ae0506079d8c",
       "name": "Save Weekly Insights"
     },
     {
@@ -93,9 +93,9 @@
       "typeVersion": 1.2,
       "position": [
         -32,
-        352
+        1104
       ],
-      "id": "94071a68-6673-432f-8445-23fc8bd1d551",
+      "id": "2d6c962e-a5db-49d4-b506-fa52671601ed",
       "name": "When Executed by Another Workflow"
     },
     {
@@ -109,10 +109,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        416,
-        256
+        640,
+        528
       ],
-      "id": "30a51213-bbe2-46a9-859b-303747f178a7",
+      "id": "d0715a1b-f621-4e3d-80a7-22ea5a1eb24d",
       "name": "Check Report Needs Generation"
     },
     {
@@ -126,7 +126,7 @@
           },
           "conditions": [
             {
-              "id": "8a4d5764-afde-4ede-89de-a8de67e0abde",
+              "id": "af8dbd90-fb33-426c-969d-0aff2edd7ffe",
               "leftValue": "={{ $json.should_generate }}",
               "rightValue": "",
               "operator": {
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        640,
-        256
+        864,
+        528
       ],
-      "id": "16d7a0b4-3add-4d93-bee7-b2c0f9c6b5a6",
+      "id": "67151a03-01ef-4adc-af8e-9f3faeedc935",
       "name": "Needs AI Generation?"
     },
     {
@@ -154,25 +154,25 @@
         "assignments": {
           "assignments": [
             {
-              "id": "ce7a867f-ab00-4c00-8500-a600bca3a700",
+              "id": "bde2da04-fe7e-400b-a361-8e8b3a709057",
               "name": "week_start",
-              "value": "={{ $json.week_start }}",
+              "value": "={{ $('Check Report Needs Generation').first().json.week_start }}",
               "type": "string"
             },
             {
-              "id": "927c66a2-aee2-4de2-84e2-b3e220c2b2e2",
+              "id": "ad40404c-6f8f-4a09-8b4f-32116a96e9ed",
               "name": "report_markdown",
-              "value": "={{ $json.report_markdown }}",
+              "value": "={{ $('Check Report Needs Generation').first().json.report_markdown }}",
               "type": "string"
             },
             {
-              "id": "927ea539-34d3-45d3-82d3-33d37fd130d3",
+              "id": "e0da93cd-93e7-4719-b409-50ad7418c384",
               "name": "generated_at",
-              "value": "={{ $json.generated_at }}",
+              "value": "={{ $('Check Report Needs Generation').first().json.generated_at }}",
               "type": "string"
             },
             {
-              "id": "ce814244-3d77-4c77-8777-36777cc03977",
+              "id": "e4583491-a733-4d65-970b-74b0f4ac69fc",
               "name": "status",
               "value": "cached",
               "type": "string"
@@ -184,10 +184,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        928,
-        400
+        1152,
+        528
       ],
-      "id": "d4cbf8a6-719d-4e4d-b260-a5c202a2cd98",
+      "id": "6bfbcd2d-b242-43e9-90b3-a731639875ec",
       "name": "Return Saved Insights"
     },
     {
@@ -195,25 +195,25 @@
         "assignments": {
           "assignments": [
             {
-              "id": "2d40c01a-7f9c-4e9c-859c-849c387a839c",
+              "id": "97c3dbb1-7062-4832-8f0a-5d6f3f1018ff",
               "name": "week_start",
-              "value": "={{ $json.week_start }}",
+              "value": "={{ $('Save Weekly Insights').first().json.week_start }}",
               "type": "string"
             },
             {
-              "id": "e93e1677-07c3-48c3-81c3-02c35e1b03c3",
+              "id": "227e1e96-8a85-40a6-aada-994a5d319fad",
               "name": "report_markdown",
-              "value": "={{ $json.report_markdown }}",
+              "value": "={{ $('Save Weekly Insights').first().json.report_markdown }}",
               "type": "string"
             },
             {
-              "id": "e946653c-804e-4f4e-8a4e-794e05787c4e",
+              "id": "5e04efe3-785b-43fc-8d7a-9bfb6155c9fc",
               "name": "generated_at",
-              "value": "={{ $json.generated_at }}",
+              "value": "={{ $('Save Weekly Insights').first().json.generated_at }}",
               "type": "string"
             },
             {
-              "id": "2d42feb1-04ef-45ef-82ef-03efc6c900ef",
+              "id": "97105585-d1ec-4b38-893b-64cb71cdf249",
               "name": "status",
               "value": "generated",
               "type": "string"
@@ -225,21 +225,13 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1440,
-        112
+        1664,
+        0
       ],
-      "id": "a6bf6e35-84c5-478d-855e-d969bcb8b44b",
+      "id": "b346c9bd-2f18-4fbb-9da6-1400b1a341d2",
       "name": "Return Generated Insights"
     },
     {
-      "id": "1c3d2ee8-e464-4ec0-b53b-1c009254bdba",
-      "name": "Weekly KPI Comparison Found?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        416,
-        256
-      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -250,7 +242,7 @@
           },
           "conditions": [
             {
-              "id": "3b9711d8-f77e-467e-897e-f87e350cfb7e",
+              "id": "49dd3499-2b08-4217-87ad-aa216d4697f3",
               "leftValue": "={{ $json.week_start || '' }}",
               "rightValue": "",
               "operator": {
@@ -263,55 +255,53 @@
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "1c61197e-1898-4ec6-80be-19c4ab4dcb7e",
+      "name": "Weekly KPI Comparison Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        864
+      ]
     },
     {
-      "id": "e3065987-70e1-4027-a255-e3c9b046ec6e",
-      "name": "Return Missing KPI",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        640,
-        432
-      ],
       "parameters": {
-        "mode": "manual",
         "assignments": {
           "assignments": [
             {
-              "id": "8cc7a60d-a170-4270-8770-a870859da570",
+              "id": "962fe674-e787-4342-befd-cfe8e89c9faf",
               "name": "status",
               "type": "string",
               "value": "not_found"
             },
             {
-              "id": "88c9de58-6fc9-4ec9-81c9-70c9158c73c9",
+              "id": "e25598ab-df0a-4dc7-a8dc-0d46c5f15428",
               "name": "message",
               "type": "string",
-              "value": "={{ $json.requested_week ? 'No complete weekly KPI comparison found for week starting ' + $json.requested_week + '.' : 'No complete weekly KPI comparison is available.' }}"
+              "value": "={{ $('Get Weekly Comparison').first().json.requested_week ? 'No complete weekly KPI comparison found for week starting ' + $('Get Weekly Comparison').first().json.requested_week + '.' : 'No complete weekly KPI comparison is available.' }}"
             }
           ]
         },
         "options": {}
-      }
+      },
+      "id": "474f3c47-cb16-4651-8ff9-9e8c45aa1225",
+      "name": "Return Missing KPI",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        912
+      ]
     },
     {
-      "id": "adb2caf6-2d8a-454e-a0e5-09690d9a3473",
-      "name": "Step 30 Log Insights 01 trigger/start",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        1700,
-        0
-      ],
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -321,9 +311,9 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "",
-            "promptVersion": "",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
-            "model": "",
+            "model": "google/gemini-3.1-flash-lite",
             "cache": "",
             "runStatus": "running",
             "stage": "trigger/start",
@@ -533,26 +523,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "94f1477f-1a45-4a68-98fb-db75d04c1da7",
-      "name": "Step 30 Log Insights 02 trigger/start",
+      "id": "3aec7d9a-e084-4c1b-9219-5fc4a5b2305a",
+      "name": "Log Insights — Manual run started",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        130
+        192,
+        768
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -562,9 +551,9 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "",
-            "promptVersion": "",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
-            "model": "",
+            "model": "google/gemini-3.1-flash-lite",
             "cache": "",
             "runStatus": "running",
             "stage": "trigger/start",
@@ -774,26 +763,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "d0ddb05f-80b9-42d8-a700-212fc70011b5",
-      "name": "Step 30 Log Insights 03 primary KPI comparison fetch",
+      "id": "25120b1c-4bc0-469d-b0a9-a4ec451dffd6",
+      "name": "Log Insights — Subworkflow run started",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        260
+        192,
+        880
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -803,7 +791,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -815,7 +803,7 @@
             "inputCount": 1,
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [ { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"total_users\", currentValue: $json.total_users, priorValue: $json.prev_users, change: $json.users_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"purchases\", currentValue: $json.purchases, priorValue: $json.prev_purchases, change: $json.purchases_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"revenue_usd\", currentValue: $json.revenue_usd, priorValue: $json.prev_revenue, change: $json.revenue_wow_pct, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"conversion_rate_pct\", currentValue: $json.conversion_rate_pct, priorValue: $json.prev_conversion_rate, change: $json.conversion_change_pp, source: \"Get Weekly Comparison\" }, { period: [$json.week_start, $json.week_end].filter(Boolean).join(\" to \"), metric: \"revenue_per_purchase_usd\", currentValue: $json.revenue_per_purchase_usd, priorValue: $json.prev_revenue_per_purchase_usd, change: $json.revenue_per_purchase_wow_pct, source: \"Get Weekly Comparison\" } ].filter(k => k.period && k.currentValue !== undefined && k.currentValue !== null) }}"
           },
@@ -1015,26 +1003,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "06d466cb-586a-4a8d-ba9b-1ee3a7e625ee",
-      "name": "Step 30 Log Insights 04 weekly comparison availability gate",
+      "id": "8bce5b90-5fd5-473d-bc02-ada533533ce8",
+      "name": "Log Insights — Weekly KPI comparison loaded",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        390
+        416,
+        800
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1044,7 +1031,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -1056,7 +1043,7 @@
             "inputCount": "={{ $(\"Get Weekly Comparison\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -1256,26 +1243,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "7f0579f0-f564-4f3b-9989-1ba89d6a67d2",
-      "name": "Step 30 Log Insights 05 weekly comparison availability gate",
+      "id": "2aaedabe-5f85-4e4a-b75b-95ed53fe56d2",
+      "name": "Log Insights — KPI comparison available",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        520
+        640,
+        480
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1285,7 +1271,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -1297,7 +1283,7 @@
             "inputCount": "={{ $(\"Get Weekly Comparison\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -1497,26 +1483,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "9d2be8f5-b4dd-4666-b433-74920387a0a0",
-      "name": "Step 30 Log Insights 06 report freshness/generation gate",
+      "id": "e19b64d5-46f4-4cc7-85ee-020cf6398573",
+      "name": "Log Insights — KPI comparison unavailable",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        650
+        640,
+        800
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1526,7 +1511,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -1538,7 +1523,7 @@
             "inputCount": "={{ $(\"Check Report Needs Generation\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -1738,26 +1723,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "349e4d05-a785-427f-bc32-c12f08e57d39",
-      "name": "Step 30 Log Insights 07 report freshness/generation gate",
+      "id": "e69eace5-5a42-4d5f-a913-0218f305a699",
+      "name": "Log Insights — Report generation required",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        780
+        1152,
+        0
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -1767,7 +1751,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -1779,7 +1763,7 @@
             "inputCount": "={{ $(\"Check Report Needs Generation\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -1979,26 +1963,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "9144b6e0-7393-47dd-8e71-620fe66581bc",
-      "name": "Step 30 Log Insights 08 AI model generation",
+      "id": "0c527ec7-511f-4ce9-8a60-d2ce8c708375",
+      "name": "Log Insights — Saved report reused",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        910
+        1152,
+        400
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -2008,7 +1991,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -2020,7 +2003,7 @@
             "inputCount": "={{ $(\"Needs AI Generation?\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -2220,26 +2203,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "2d7aa1e2-5a11-48e4-a688-100fc4b623c1",
-      "name": "Step 30 Log Insights 09 insights persistence",
+      "id": "7f9ae325-c878-40dd-8b7c-9858842df61a",
+      "name": "Log Insights — Weekly report generated",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        1040
+        1440,
+        48
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -2249,7 +2231,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -2261,7 +2243,7 @@
             "inputCount": "={{ $(\"Generate Weekly Insights\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -2461,26 +2443,25 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "29395809-a010-42b6-b677-a9cd805ad7b1",
-      "name": "Step 30 Log Insights 10 final return",
+      "id": "9e098a0d-61ce-426e-8b84-9e962e2e684c",
+      "name": "Log Insights — Weekly report saved",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        1170
+        1664,
+        -192
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -2490,7 +2471,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -2502,7 +2483,7 @@
             "inputCount": "={{ $(\"Save Weekly Insights\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "={{ $(\"Save Weekly Insights\").first().json.report_markdown === \"PINNED_NO_WRITE_SENTINEL\" ? \"Pinned no-write test\" : \"PostgreSQL insights upsert\" }}",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -2702,26 +2683,26 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "c2416289-6d7d-4c3e-b80d-c6e33903fe35",
-      "name": "Step 30 Log Insights 11 final return",
+      "id": "b0b06b80-57c6-4f3c-af08-f3034976e461",
+      "name": "Log Insights — Generated report returned",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        1300
+        1888,
+        -96
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -2731,7 +2712,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -2743,7 +2724,7 @@
             "inputCount": "={{ $(\"Needs AI Generation?\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "Cache hit; no write",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -2943,26 +2924,26 @@
           "waitForSubWorkflow": true
         }
       },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "eb94a8bd-f5e6-4408-9f67-4f5019b560b3",
-      "name": "Step 30 Log Insights 12 final return",
+      "id": "e79f0f8e-cf11-41e8-b582-0ffa2f3f4042",
+      "name": "Log Insights — Saved report returned",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        1700,
-        1430
+        1440,
+        440
       ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SELECT_WORKFLOW_AFTER_IMPORT"
+          "value": "SELECT_WORKFLOW_AFTER_IMPORT",
+          "cachedResultName": "GA4 Project Log Writer"
         },
-        "mode": "once",
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
@@ -2972,7 +2953,7 @@
             "mode": "={{ $execution.mode }}",
             "runTime": "={{ $now.toUTC().toISO() }}",
             "dateRange": "={{ $(\"Get Weekly Comparison\").all().map(i => i.json.week_start ? i.json.week_start + \" to \" + i.json.week_end : \"\").filter(Boolean)[0] ?? \"\" }}",
-            "promptVersion": "weekly-insights-v4",
+            "promptVersion": "weekly-insights-v6",
             "workflowVersion": "",
             "model": "google/gemini-3.1-flash-lite",
             "cache": "",
@@ -2984,7 +2965,7 @@
             "inputCount": "={{ $(\"Weekly KPI Comparison Found?\").all().length }}",
             "outputCount": "={{ $input.all().length }}",
             "errorSummary": "",
-            "saveMode": "PostgreSQL insights upsert",
+            "saveMode": "No KPI data; no write",
             "sourceReport": "={{ 'exec:' + $execution.id }}",
             "kpis": "={{ [] }}"
           },
@@ -3184,8 +3165,17 @@
           "waitForSubWorkflow": true
         }
       },
+      "id": "9f6af48f-1f63-46ed-aab6-8bdfe4567035",
+      "name": "Log Insights — KPI data unavailable returned",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        832
+      ],
+      "retryOnFail": false,
       "onError": "continueRegularOutput",
-      "retryOnFail": false
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -3193,12 +3183,12 @@
       "main": [
         [
           {
-            "node": "Get Weekly Comparison",
+            "node": "Log Insights — Manual run started",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 01 trigger/start",
+            "node": "Get Weekly Comparison",
             "type": "main",
             "index": 0
           }
@@ -3220,12 +3210,12 @@
       "main": [
         [
           {
-            "node": "Save Weekly Insights",
+            "node": "Log Insights — Weekly report generated",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 08 AI model generation",
+            "node": "Save Weekly Insights",
             "type": "main",
             "index": 0
           }
@@ -3236,12 +3226,12 @@
       "main": [
         [
           {
-            "node": "Get Weekly Comparison",
+            "node": "Log Insights — Subworkflow run started",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 02 trigger/start",
+            "node": "Get Weekly Comparison",
             "type": "main",
             "index": 0
           }
@@ -3263,24 +3253,24 @@
       "main": [
         [
           {
-            "node": "Generate Weekly Insights",
+            "node": "Log Insights — Report generation required",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 06 report freshness/generation gate",
+            "node": "Generate Weekly Insights",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Return Saved Insights",
+            "node": "Log Insights — Saved report reused",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 07 report freshness/generation gate",
+            "node": "Log Insights — Saved report returned",
             "type": "main",
             "index": 0
           }
@@ -3291,12 +3281,12 @@
       "main": [
         [
           {
-            "node": "Return Generated Insights",
+            "node": "Log Insights — Weekly report saved",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 09 insights persistence",
+            "node": "Log Insights — Generated report returned",
             "type": "main",
             "index": 0
           }
@@ -3307,12 +3297,12 @@
       "main": [
         [
           {
-            "node": "Weekly KPI Comparison Found?",
+            "node": "Log Insights — Weekly KPI comparison loaded",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 03 primary KPI comparison fetch",
+            "node": "Weekly KPI Comparison Found?",
             "type": "main",
             "index": 0
           }
@@ -3323,57 +3313,57 @@
       "main": [
         [
           {
-            "node": "Check Report Needs Generation",
+            "node": "Log Insights — KPI comparison available",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 04 weekly comparison availability gate",
+            "node": "Check Report Needs Generation",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Return Missing KPI",
+            "node": "Log Insights — KPI comparison unavailable",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Step 30 Log Insights 05 weekly comparison availability gate",
+            "node": "Log Insights — KPI data unavailable returned",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Return Generated Insights": {
+    "Log Insights — Saved report returned": {
       "main": [
         [
           {
-            "node": "Step 30 Log Insights 10 final return",
+            "node": "Return Saved Insights",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Return Saved Insights": {
+    "Log Insights — Generated report returned": {
       "main": [
         [
           {
-            "node": "Step 30 Log Insights 11 final return",
+            "node": "Return Generated Insights",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Return Missing KPI": {
+    "Log Insights — KPI data unavailable returned": {
       "main": [
         [
           {
-            "node": "Step 30 Log Insights 12 final return",
+            "node": "Return Missing KPI",
             "type": "main",
             "index": 0
           }
