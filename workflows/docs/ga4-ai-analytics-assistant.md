@@ -25,7 +25,7 @@ The published prompt is [ai-assistant-system-prompt.md](../../prompts/ai-assista
 
 ## Logging
 
-The three Step 30 nodes call the shared [GA4 Project Log Writer](ga4-project-log-writer.md). They write allowlisted run/stage summaries to Google Sheets. No raw prompt or full node input/output is intended for the log.
+The three logging nodes call the shared [GA4 Project Log Writer](ga4-project-log-writer.md). They write allowlisted run/stage summaries to Google Sheets. No raw prompt or full node input/output is intended for the log.
 
 ## Workflow diagram
 
@@ -40,9 +40,9 @@ flowchart LR
   A -. eligible-week request .-> W[Generate On-Demand Weekly Insights]
   W --> PG[(weekly_insights)]
   A -. explicit slides only .-> P[Generate Weekly Presentation]
-  C -.-> L1[Step 30 Log 01]
-  A -.-> L2[Step 30 Log 02]
-  P -.-> L3[Step 30 Log 03]
+  C -.-> L1[Log Assistant Run Start]
+  A -.-> L2[Log Assistant Agent Stage]
+  P -.-> L3[Log Assistant Run Completion]
   L1 --> LOG[GA4 Project Log Writer]
   L2 --> LOG
   L3 --> LOG
